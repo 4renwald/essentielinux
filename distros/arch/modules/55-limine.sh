@@ -142,24 +142,67 @@ part_number="$(lsblk --noheadings --nodeps --output PARTN "${esp_source}" | xarg
 disk="/dev/${parent_name}"
 
 case "$(< /sys/firmware/efi/fw_platform_size)" in
-  64) loader_name=BOOTX64.EFI ;;
-  32) loader_name=BOOTIA32.EFI ;;
+  64) loader_names=(BOOTX64.EFI limine_x64.efi) ;;
+  32) loader_names=(BOOTIA32.EFI limine_ia32.efi) ;;
   *) die "Unsupported UEFI firmware bitness." ;;
 esac
-loader_file="${LIMINE_CONFIG%/*}/${loader_name}"
-as_root test -f "${loader_file}" \
-  || die "Limine EFI executable not found beside its configuration: ${loader_file}"
+
+# Arch's Limine package has used both the generic BOOT*.EFI names and its
+# limine_* variant over time. Prefer a loader beside the configuration, then
+# check the package's other conventional ESP directories before failing.
+declare -a loader_directories=(
+  "${LIMINE_CONFIG%/*}"
+  "${mount_target}/EFI/limine"
+  "${mount_target}/EFI/arch-limine"
+  "${mount_target}/EFI/BOOT"
+)
+loader_file=''
+for directory in "${loader_directories[@]}"; do
+  for loader_name in "${loader_names[@]}"; do
+    candidate="${directory}/${loader_name}"
+    if as_root test -f "${candidate}"; then
+      loader_file=${candidate}
+      break 2
+    fi
+  done
+done
+[[ -n ${loader_file} ]] \
+  || die "Limine EFI executable was not found in the configuration or conventional ESP directories."
 
 loader_path="${loader_file#"${mount_target}"}"
 [[ ${loader_path} == /* ]] || loader_path="/${loader_path}"
 loader_path="${loader_path//\//\\}"
 
-existing_entry="$(efibootmgr -v | awk '/^Boot[[:xdigit:]]{4}\*?[[:space:]]+Limine([[:space:]]|$)/ { print; exit }')"
-if [[ -n ${existing_entry} ]]; then
-  grep -Fq -- "${loader_path}" <<< "${existing_entry}" \
-    || die "A firmware entry named Limine targets a different loader: ${existing_entry}"
-  log_success "Named Limine firmware entry already targets ${loader_path}."
-else
+normalize_efi_path() {
+  local path=${1//\//\\}
+  # Firmware paths are case-insensitive. Some efibootmgr versions print
+  # escaped separators, so collapse repeated backslashes before comparing.
+  path="$(printf '%s\n' "${path}" | tr -s '\\' | tr '[:upper:]' '[:lower:]')"
+  printf '%s\n' "${path}"
+}
+
+efi_entry_path() {
+  sed -n 's/.*[Ff]ile(\([^)]*\)).*/\1/p' <<< "$1"
+}
+
+efi_entry_matches_loader() {
+  local entry_path
+  entry_path="$(efi_entry_path "$1")"
+  [[ -n ${entry_path} ]] \
+    && [[ $(normalize_efi_path "${entry_path}") == "$(normalize_efi_path "${loader_path}")" ]]
+}
+
+limine_entry_visible() {
+  local entry
+  while IFS= read -r entry; do
+    if efi_entry_matches_loader "${entry}"; then
+      return 0
+    fi
+  done < <(efibootmgr -v | awk 'tolower($0) ~ /^boot[[:xdigit:]]{4}\*?[[:space:]]+limine([[:space:]]|$)/ { print }')
+  return 1
+}
+
+create_limine_entry() {
   as_root efibootmgr \
     --create \
     --disk "${disk}" \
@@ -167,9 +210,38 @@ else
     --label Limine \
     --loader "${loader_path}" \
     --unicode
-  efibootmgr -v | awk '/^Boot[[:xdigit:]]{4}\*?[[:space:]]+Limine([[:space:]]|$)/ { found = 1 } END { exit !found }' \
-    || die "efibootmgr succeeded, but the Limine entry is not visible."
+  limine_entry_visible \
+    || die "efibootmgr succeeded, but the Limine entry for ${loader_path} is not visible."
   log_success "Created the Limine firmware entry for ${disk}, partition ${part_number}, loader ${loader_path}."
+}
+
+declare -a limine_entries=()
+while IFS= read -r entry; do
+  [[ -n ${entry} ]] && limine_entries+=("${entry}")
+done < <(efibootmgr -v | awk 'tolower($0) ~ /^boot[[:xdigit:]]{4}\*?[[:space:]]+limine([[:space:]]|$)/ { print }')
+
+matching_entry=''
+for entry in "${limine_entries[@]}"; do
+  if efi_entry_matches_loader "${entry}"; then
+    matching_entry=${entry}
+    break
+  fi
+done
+
+if [[ -n ${matching_entry} ]]; then
+  log_success "Named Limine firmware entry already targets ${loader_path}."
+elif ((${#limine_entries[@]} > 0)); then
+  # A previous Limine installation may use a different valid path (for
+  # example limine_x64.efi instead of BOOTX64.EFI). Keep the existing entry
+  # rather than rewriting a user's boot order or creating a duplicate label.
+  existing_path="$(efi_entry_path "${limine_entries[0]}")"
+  if [[ -n ${existing_path} ]]; then
+    log_warn "A named Limine entry already uses ${existing_path}; keeping it unchanged."
+  else
+    log_warn "A named Limine entry exists but its loader path could not be read; keeping it unchanged."
+  fi
+else
+  create_limine_entry
 fi
 
 log_success "Limine is themed and registered; the existing UEFI OS fallback was retained."

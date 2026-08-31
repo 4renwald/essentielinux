@@ -11,7 +11,6 @@ fonts :: JetBrainsMono and Nerd Font symbols
 bibata :: Bibata Modern Classic cursor
 shaders :: mpv shader pack (ArtCNN, Anime4K, FSRCNNX)
 ff2mpv :: ff2mpv native messaging host for Zen
-ventoy :: Ventoy multiboot USB tool
 chatgpt :: ChatGPT desktop RPM
 keeper :: Keeper password manager RPM
 opencode-desktop :: OpenCode desktop RPM

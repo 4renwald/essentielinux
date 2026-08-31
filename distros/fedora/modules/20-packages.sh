@@ -13,6 +13,13 @@ for manifest in core desktop shell apps; do
   install_dnf_manifest "${DISTRO_ROOT}/packages/${manifest}.txt"
 done
 
+# Fedora keeps most hardware drivers in the kernel and ships their firmware as
+# a maintained comps group. Installing the group lets Fedora's kernel/udev
+# device matching choose the correct firmware without hard-coding a Wi-Fi
+# vendor or chipset in this repository.
+log_step 'Installing Fedora hardware firmware support'
+as_root dnf -y group install hardware-support
+
 log_step 'Preparing the GPU driver stack'
 mapfile -t gpu_vendors < <(gpu_driver_vendors)
 if ((${#gpu_vendors[@]} == 0)); then

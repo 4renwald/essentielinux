@@ -2,6 +2,7 @@
 # package that cannot be deselected (networking, hardware probing, swap, and
 # the settings backend the desktop's theming depends on).
 *networkmanager :: network management
+*wpa_supplicant :: Wi-Fi authentication backend for NetworkManager
 *pciutils :: lspci hardware probing
 *zram-generator :: compressed swap on zram
 *xdg-user-dirs :: manages ~/Documents, ~/Downloads and friends
@@ -13,8 +14,8 @@ btop :: terminal resource monitor
 unzip :: zip extraction
 bluez :: Bluetooth stack
 bluez-utils :: Bluetooth utilities
-linux-firmware :: firmware for hardware components
-wireless-regdb :: regulatory database for full 5/6 GHz Wi-Fi
+*linux-firmware :: firmware for hardware components
+*wireless-regdb :: regulatory database for full 5/6 GHz Wi-Fi
 noto-fonts :: Noto font family
 noto-fonts-emoji :: color emoji font
 ttf-dejavu :: DejaVu fonts

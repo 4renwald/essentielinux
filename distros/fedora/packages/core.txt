@@ -9,6 +9,8 @@
 *xdg-utils :: xdg-open and desktop integration helpers
 bluez :: Bluetooth stack
 pciutils :: lspci hardware probing
+*kernel-modules :: Fedora's in-tree hardware drivers, including Wi-Fi
+*kernel-modules-extra :: Fedora's less common in-tree hardware drivers
 *linux-firmware :: firmware for hardware components
 microcode_ctl :: CPU microcode updates
 *wireless-regdb :: WiFi regulatory database

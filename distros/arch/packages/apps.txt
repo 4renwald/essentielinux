@@ -15,3 +15,4 @@ signal-desktop :: Signal messenger
 telegram-desktop :: Telegram client
 qemu-desktop :: QEMU with desktop VM modules; vm-curator drives it
 nextcloud-client :: Nextcloud desktop file-sync client
+qbittorrent :: BitTorrent client

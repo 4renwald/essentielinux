@@ -1,15 +1,17 @@
 # Fedora base packages. Lines use `*name :: description`; `*` marks a structural
 # package that cannot be deselected.
 *NetworkManager :: network management
+*NetworkManager-wifi :: Wi-Fi device support for NetworkManager
+*wpa_supplicant :: Wi-Fi authentication backend for NetworkManager
 *dbus :: system message bus
 *dconf :: settings storage used by the desktop
 *xdg-user-dirs :: manages ~/Documents, ~/Downloads and friends
 *xdg-utils :: xdg-open and desktop integration helpers
 bluez :: Bluetooth stack
 pciutils :: lspci hardware probing
-linux-firmware :: firmware for hardware components
+*linux-firmware :: firmware for hardware components
 microcode_ctl :: CPU microcode updates
-wireless-regdb :: WiFi regulatory database
+*wireless-regdb :: WiFi regulatory database
 zram-generator :: compressed swap on zram
 btop :: terminal resource monitor
 curl :: transfers and downloads

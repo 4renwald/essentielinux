@@ -1,0 +1,21 @@
+# Managed by workstation; reapply with ./install.sh 40.
+#
+# sysc-greet is a graphical greeter: unlike tuigreet it does not draw on the
+# bare VT, it runs inside a Wayland compositor that greetd starts for the login
+# screen alone. niri quits itself the moment sysc-greet exits (see the
+# `niri msg action quit` call in niri-greeter-config.kdl), so greetd can then
+# start the chosen session and nothing of the greeter stack stays running.
+#
+# The session command is no longer hardcoded here. sysc-greet reads
+# /usr/share/wayland-sessions, where Hyprland ships hyprland.desktop with
+# `Exec=/usr/bin/start-hyprland`, so the session still launches through
+# Hyprland's own watchdog wrapper exactly as tuigreet's --cmd did.
+#
+# No [initial_session] on purpose: that key is greetd's autologin, and this
+# machine should ask for a password.
+[terminal]
+vt = 1
+
+[default_session]
+command = "niri -c /etc/greetd/niri-greeter-config.kdl"
+user = "greeter"

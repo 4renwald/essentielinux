@@ -1,0 +1,9 @@
+# System-wide Flathub applications.
+org.signal.Signal :: Signal messenger
+md.obsidian.Obsidian :: Obsidian notes
+app.zen_browser.zen :: Zen browser
+com.spotify.Client :: Spotify music
+com.vysp3r.ProtonPlus :: ProtonPlus (Proton manager)
+io.github.radiolamp.mangojuice :: MangoJuice (MangoHud config GUI)
+org.gtk.Gtk3theme.adw-gtk3 :: adw-gtk3 theme
+org.gtk.Gtk3theme.adw-gtk3-dark :: adw-gtk3 dark theme

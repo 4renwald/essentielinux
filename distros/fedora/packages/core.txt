@@ -1,0 +1,37 @@
+# Fedora base packages. Lines: `*name :: description` — `*` marks a structural
+# package that cannot be deselected.
+*NetworkManager :: network management
+*dbus :: system message bus
+*dconf :: settings storage used by the desktop
+*xdg-user-dirs :: manages ~/Documents, ~/Downloads and friends
+*xdg-utils :: xdg-open and desktop integration helpers
+bluez :: Bluetooth stack
+pciutils :: lspci hardware probing
+linux-firmware :: firmware for hardware components
+microcode_ctl :: CPU microcode updates
+wireless-regdb :: WiFi regulatory database
+zram-generator :: compressed swap on zram
+btop :: terminal resource monitor
+curl :: transfers and downloads
+git :: version control
+jq :: JSON processor
+unzip :: zip extraction
+nano :: simple terminal editor
+less :: pager used by man and dnf
+man-db :: manual page reader
+man-pages :: Linux manual pages
+gcc :: C compiler
+make :: build tool
+fwupd :: firmware update service
+smartmontools :: drive health monitoring (SMART)
+mokutil :: Secure Boot key management
+btrfs-progs :: Btrfs filesystem tools
+snapper :: Btrfs snapshot manager
+libdnf5-plugin-actions :: DNF5 transaction hooks used for snapshots
+google-noto-sans-fonts :: Noto Sans font family
+google-noto-serif-fonts :: Noto Serif font family
+google-noto-sans-mono-fonts :: Noto Sans Mono font family
+google-noto-color-emoji-fonts :: color emoji font
+google-noto-sans-cjk-fonts :: Noto CJK fonts for Chinese, Japanese and Korean
+dejavu-sans-fonts :: DejaVu fonts
+liberation-fonts-all :: Liberation metric-compatible fonts

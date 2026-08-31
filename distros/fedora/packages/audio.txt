@@ -1,0 +1,12 @@
+# Audio stack. `*` marks the PipeWire core the desktop expects.
+*pipewire :: audio and video stack
+*pipewire-alsa :: ALSA routing through PipeWire
+*pipewire-pulseaudio :: PulseAudio compatibility
+*wireplumber :: PipeWire session manager
+rtkit :: realtime scheduling for audio
+pavucontrol :: volume control
+easyeffects :: per-app audio effects
+calf :: plugin suite for EasyEffects
+libldac :: LDAC Bluetooth codec
+libfreeaptx :: aptX Bluetooth codec
+fdk-aac :: AAC Bluetooth codec

@@ -1,0 +1,22 @@
+# AUR packages, built and installed through paru. The Caelestia desktop itself
+# is installed by `caelestia install` (module 45).
+caelestia-cli :: Caelestia installer CLI
+chatgpt-desktop :: ChatGPT desktop client
+claude-code :: Claude Code CLI
+opencode-desktop-bin :: graphical OpenCode client, alongside the opencode CLI
+bibata-cursor-theme-bin :: Bibata Modern Classic cursor
+helium-browser-bin :: secondary Chromium-based browser with VA-API flags
+spotify :: Spotify client
+spicetify-cli :: Spicetify CLI
+keeper-password-manager :: Keeper password manager
+zen-browser-bin :: Zen browser
+ff2mpv-rust :: native messaging host handing page URLs to mpv
+hyprmod :: GTK4 settings app for Hyprland (writes are treated as drift)
+protonup-qt-bin :: installs and updates Proton-GE into Steam's directory
+vkbasalt :: Vulkan post-processing used by GOverlay
+lib32-vkbasalt :: vkBasalt for 32-bit games
+qtengine :: Qt platform theme named by Caelestia's generated configuration
+darkly-bin :: widget style named by Caelestia's generated qtengine config
+papirus-folders :: recolours Papirus folders to the active scheme
+sysc-greet :: graphical greetd greeter rendered inside niri
+vm-curator :: TUI for QEMU/KVM VMs; QEMU itself is declared in apps.txt

@@ -1,0 +1,12 @@
+# Applications from Fedora and vendor repositories.
+codium :: VSCodium editor
+discord :: Discord chat
+gh :: GitHub CLI
+glab :: GitLab CLI
+mullvad-vpn :: Mullvad VPN client
+brave-browser :: Brave browser
+telegram-desktop :: Telegram client
+claude-code :: Claude Code CLI
+mpv :: video player and this system's browser-video upscaler
+yt-dlp :: URL resolver mpv's ytdl_hook calls
+qemu-kvm :: QEMU virtual machines, driven by vm-curator

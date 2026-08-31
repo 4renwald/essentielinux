@@ -1,0 +1,10 @@
+# Gaming stack. The 32-bit entries exist for Steam and older Windows games.
+steam :: Steam client
+gamemode :: performance mode on demand
+lib32-gamemode :: GameMode for 32-bit games
+goverlay :: MangoHud/vkBasalt configuration GUI
+lib32-mangohud :: MangoHud for 32-bit games (GOverlay pulls the 64-bit one)
+gamescope :: micro-compositor for games
+ntsync-autoload :: NT synchronization device for Proton and Wine
+lib32-vulkan-icd-loader :: Vulkan loader for 32-bit games
+protontricks :: per-game Proton tweaks

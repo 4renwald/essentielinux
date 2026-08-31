@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+latest="$(noctalia msg clipboard-text)"
+[[ -n ${latest} ]] || exit 0
+printf '%s' "${latest}" | wl-copy
+sleep 0.05
+hyprctl dispatch sendshortcut CTRL,V,activewindow

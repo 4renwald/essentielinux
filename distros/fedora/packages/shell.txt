@@ -1,0 +1,10 @@
+# Terminal and shell experience.
+fish :: friendly interactive shell
+fastfetch :: system info greeting
+direnv :: per-directory environment variables
+eza :: modern ls replacement
+zoxide :: smarter cd
+fzf :: fuzzy finder
+fd-find :: modern find replacement
+ripgrep :: fast code search
+bat :: cat with syntax highlighting

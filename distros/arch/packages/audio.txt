@@ -1,0 +1,12 @@
+# Audio stack. `*` marks the PipeWire core the desktop expects.
+*pipewire :: audio and video stack
+*pipewire-audio :: PipeWire's audio bits
+*pipewire-alsa :: ALSA routing through PipeWire
+*pipewire-pulse :: PulseAudio compatibility
+*wireplumber :: PipeWire session manager
+rtkit :: realtime scheduling so audio stays clean under load
+pavucontrol :: volume control
+# Bluetooth codec plugins only load when the encoder library exists.
+libldac :: LDAC Bluetooth codec
+libfreeaptx :: aptX Bluetooth codec
+libfdk-aac :: AAC Bluetooth codec

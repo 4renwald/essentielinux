@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# Searchable live keybind list for Noctalia v5.
+set -uo pipefail
+
+print_only=false
+case ${1-} in
+  --print) print_only=true ;;
+  -h|--help) printf 'Usage: %s [--print]\n' "${0##*/}"; exit 0 ;;
+  '') ;;
+  *) printf 'Unknown option: %s\n' "$1" >&2; exit 2 ;;
+esac
+
+command -v hyprctl >/dev/null || { printf 'hyprctl not found\n' >&2; exit 1; }
+if [[ ${print_only} == false ]]; then
+  command -v fuzzel >/dev/null || { printf 'fuzzel not found\n' >&2; exit 1; }
+  if pkill -x fuzzel 2>/dev/null; then exit 0; fi
+fi
+
+modifiers() {
+  local value=$1 out=''
+  (( value & 64 )) && out+='SUPER + '
+  (( value & 4 )) && out+='CTRL + '
+  (( value & 8 )) && out+='ALT + '
+  (( value & 1 )) && out+='SHIFT + '
+  printf '%s' "${out}"
+}
+
+pretty_key() {
+  case $1 in
+    mouse:272) printf 'Left Mouse' ;;
+    mouse:273) printf 'Right Mouse' ;;
+    mouse_up) printf 'Scroll Up' ;;
+    mouse_down) printf 'Scroll Down' ;;
+    SUPER_L|SUPER_R) printf 'Super (tap)' ;;
+    XF86*) printf '%s' "${1#XF86}" ;;
+    *) printf '%s' "${1//_/ }" | sed 's/^./\U&/' ;;
+  esac
+}
+
+read_binds() {
+  hyprctl binds | awk '
+    function emit() {
+      if (!seen) return
+      seen = 0
+      key = f["key"]
+      if (key == "" && f["keycode"] != "0" && f["keycode"] != "") key = "code:" f["keycode"]
+      if (key == "") return
+      printf "%s\037%s\037%s\037%s\037%s\n", f["modmask"], key, f["description"], f["dispatcher"], f["arg"]
+    }
+    /^bind/ { emit(); seen = 1; delete f; next }
+    seen && match($0, /^\t[a-zA-Z_]+: /) { f[substr($0, 2, RLENGTH - 3)] = substr($0, RLENGTH + 1) }
+    seen && match($0, /^\t[a-zA-Z_]+:$/) { f[substr($0, 2, RLENGTH - 2)] = "" }
+    END { emit() }
+  '
+}
+
+render() {
+  local mask key description dispatcher argument combo action
+  while IFS=$'\037' read -r mask key description dispatcher argument; do
+    [[ -n ${key} ]] || continue
+    case ${key} in
+      SUPER_L|SUPER_R) combo='Super (tap)' ;;
+      *) combo="$(modifiers "${mask}")$(pretty_key "${key}")" ;;
+    esac
+    action=${description:-"${dispatcher}${argument:+ ${argument}}"}
+    printf '%-34s  →  %s\n' "${combo}" "${action}"
+  done < <(read_binds) | sort -fu
+}
+
+scheme_args() {
+  local theme="${XDG_CONFIG_HOME:-${HOME}/.config}/ghostty/themes/noctalia"
+  [[ -r ${theme} ]] || return 0
+  local background foreground primary selection outline
+  background="$(sed -nE 's/^background[[:space:]]*=[[:space:]]*#?([0-9a-fA-F]{6}).*/\1/p' "${theme}" | head -n1)"
+  foreground="$(sed -nE 's/^foreground[[:space:]]*=[[:space:]]*#?([0-9a-fA-F]{6}).*/\1/p' "${theme}" | head -n1)"
+  primary="$(sed -nE 's/^palette[[:space:]]*=[[:space:]]*4=#?([0-9a-fA-F]{6}).*/\1/p' "${theme}" | head -n1)"
+  selection="$(sed -nE 's/^selection-background[[:space:]]*=[[:space:]]*#?([0-9a-fA-F]{6}).*/\1/p' "${theme}" | head -n1)"
+  outline="$(sed -nE 's/^palette[[:space:]]*=[[:space:]]*8=#?([0-9a-fA-F]{6}).*/\1/p' "${theme}" | head -n1)"
+  [[ -n ${background}${foreground}${primary}${selection}${outline} ]] || return 0
+  printf '%s\n' \
+    "--background=${background}f2" "--text-color=${foreground}ff" \
+    "--match-color=${primary}ff" "--selection-color=${selection}ff" \
+    "--selection-text-color=${foreground}ff" "--border-color=${primary}e6" \
+    "--prompt-color=${foreground}ff" "--placeholder-color=${outline}ff"
+}
+
+if [[ ${print_only} == true ]]; then render; exit 0; fi
+colours=()
+while IFS= read -r line; do [[ -n ${line} ]] && colours+=("${line}"); done < <(scheme_args)
+render | fuzzel --dmenu --prompt='keybinds > ' --placeholder='Type to search keybinds' \
+  --width=68 --lines=22 "${colours[@]}" >/dev/null 2>&1 || true

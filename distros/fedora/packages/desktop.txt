@@ -1,0 +1,46 @@
+# Hyprland desktop stack. `*` marks packages the desktop cannot run without.
+*accountsservice :: user account service for the greeter
+*hyprland :: Wayland compositor
+*xdg-desktop-portal-hyprland :: screencast and portal backend for Hyprland
+*xdg-desktop-portal-gtk :: file chooser and settings portal
+*xorg-x11-server-Xwayland :: X11 compatibility layer
+*mesa-dri-drivers :: OpenGL drivers
+*mesa-vulkan-drivers :: Vulkan drivers
+*polkit :: privilege management
+*hyprpolkitagent :: polkit authentication agent for Hyprland
+*qt5-qtwayland :: Wayland support for Qt 5 apps
+*qt6-qtwayland :: Wayland support for Qt 6 apps
+*power-profiles-daemon :: performance profile switching
+*noctalia :: Noctalia Shell for Hyprland
+*noctalia-greeter :: Noctalia Greeter login UI
+*greetd :: login daemon
+hyprland-guiutils :: Hyprland helper utilities
+qt6ct :: Qt 6 configuration tool
+ghostty :: terminal emulator
+fuzzel :: application launcher
+grim :: screenshot capture
+slurp :: region selection for screenshots
+hyprshot :: screenshot tool
+hyprpicker :: color picker
+gpu-screen-recorder :: screen recorder
+ddcutil :: external monitor control (brightness and more)
+wl-clipboard :: clipboard utilities
+blueman :: Bluetooth manager
+Thunar :: file manager
+gvfs :: virtual filesystem support for Thunar
+gvfs-mtp :: phone (MTP) support in Thunar
+gvfs-smb :: network share (SMB) support in Thunar
+tumbler :: thumbnail service
+thunar-volman :: removable media management
+thunar-archive-plugin :: archive context menu for Thunar
+xarchiver :: archive manager
+ffmpegthumbnailer :: video thumbnails
+7zip :: archive support
+unrar :: RAR extraction
+ntfs-3g :: NTFS filesystem support
+exfatprogs :: exFAT filesystem support
+gnome-keyring :: secret storage and SSH agent
+libnotify :: desktop notifications
+trash-cli :: trash from the terminal
+adw-gtk3-theme :: GTK 3 theme matching libadwaita
+papirus-icon-theme :: icon theme

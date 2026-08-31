@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+action=${1:-}
+slot=${2:-}
+current="$(hyprctl activeworkspace -j | jq -er '.id')"
+(( current > 0 )) || current=1
+group=$(( (current - 1) / 10 ))
+current_slot=$(( (current - 1) % 10 + 1 ))
+
+case ${action} in
+  focus-slot)
+    [[ ${slot} =~ ^([1-9]|10)$ ]] || exit 2
+    hyprctl dispatch workspace "$((group * 10 + slot))"
+    ;;
+  move-slot)
+    [[ ${slot} =~ ^([1-9]|10)$ ]] || exit 2
+    hyprctl dispatch movetoworkspacesilent "$((group * 10 + slot))"
+    ;;
+  next-group)
+    hyprctl dispatch workspace "$(((group + 1) * 10 + current_slot))"
+    ;;
+  previous-group)
+    (( group > 0 )) && group=$((group - 1))
+    hyprctl dispatch workspace "$((group * 10 + current_slot))"
+    ;;
+  *)
+    printf 'Usage: %s {focus-slot N|move-slot N|next-group|previous-group}\n' "${0##*/}" >&2
+    exit 2
+    ;;
+esac

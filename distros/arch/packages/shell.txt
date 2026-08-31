@@ -1,0 +1,10 @@
+# Interactive shell environment. Any terminal that launches fish is themed by
+# Caelestia; anything else keeps its own defaults.
+fish :: friendly interactive shell
+starship :: prompt
+eza :: modern ls replacement
+zoxide :: smarter cd
+fzf :: fuzzy finder
+fd :: modern find replacement used by fzf
+ripgrep :: fast code search
+bat :: cat with syntax highlighting

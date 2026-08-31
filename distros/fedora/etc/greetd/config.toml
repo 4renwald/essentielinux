@@ -1,0 +1,6 @@
+[terminal]
+vt = 1
+
+[default_session]
+command = "env XCURSOR_THEME=Bibata-Modern-Classic XCURSOR_SIZE=24 /usr/bin/noctalia-greeter-session"
+user = "greeter"

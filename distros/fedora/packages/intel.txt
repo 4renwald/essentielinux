@@ -1,0 +1,8 @@
+# Userspace acceleration stack for Intel GPUs. The i915/xe kernel drivers and
+# Mesa DRI/Vulkan drivers are already provided by packages/desktop.txt.
+intel-media-driver :: VA-API video decode (Broadwell and newer)
+libva-intel-driver :: legacy VA-API for pre-Broadwell iGPUs
+mesa-demos :: OpenGL diagnostics
+vulkan-tools :: Vulkan diagnostics
+libva-utils :: VA-API diagnostics
+intel-gpu-tools :: Intel GPU diagnostics

@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+mode=${1:-screen}
+audio=${2:-none}
+runtime_dir="${XDG_RUNTIME_DIR:?XDG_RUNTIME_DIR is not set}"
+pid_file="${runtime_dir}/hypr-gpu-screen-recorder.pid"
+
+if [[ -r ${pid_file} ]]; then
+  pid="$(<"${pid_file}")"
+  executable=''
+  [[ ${pid} =~ ^[0-9]+$ ]] && executable="$(readlink -f "/proc/${pid}/exe" 2>/dev/null || true)"
+  if [[ ${executable##*/} == gpu-screen-recorder ]] && kill -0 "${pid}" 2>/dev/null; then
+    kill -INT "${pid}"
+    rm -f -- "${pid_file}"
+    notify-send 'Screen recording saved' 'Recording stopped cleanly.'
+    exit 0
+  fi
+  rm -f -- "${pid_file}"
+fi
+
+case ${mode} in
+  screen)
+    monitor="$(hyprctl monitors -j | jq -er '.[] | select(.focused) | .name' | head -n1)"
+    [[ -n ${monitor} ]] || { printf 'Unable to identify the focused monitor.\n' >&2; exit 1; }
+    capture_args=(-w "${monitor}")
+    ;;
+  region)
+    geometry="$(slurp -f '%wx%h+%x+%y')" || exit 0
+    capture_args=(-w region -region "${geometry}")
+    ;;
+  *) printf 'Unknown recording mode: %s\n' "${mode}" >&2; exit 2 ;;
+esac
+
+output_dir="${HOME}/Videos/Recordings"
+install -d "${output_dir}"
+output="${output_dir}/recording-$(date +%Y%m%d-%H%M%S).mp4"
+args=("${capture_args[@]}" -f 60 -o "${output}")
+[[ ${audio} == output ]] && args+=(-a default_output)
+
+gpu-screen-recorder "${args[@]}" >/dev/null 2>&1 &
+pid=$!
+printf '%s\n' "${pid}" > "${pid_file}"
+notify-send 'Screen recording started' "Press the same shortcut again to save ${output##*/}."

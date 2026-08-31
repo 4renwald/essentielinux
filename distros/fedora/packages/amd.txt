@@ -1,0 +1,8 @@
+# Userspace acceleration stack for AMD GPUs. The kernel driver (amdgpu) and
+# Mesa DRI/Vulkan drivers are already provided by packages/desktop.txt.
+mesa-va-drivers :: VA-API video decode
+mesa-vdpau-drivers :: VDPAU video decode
+vulkan-tools :: Vulkan diagnostics
+mesa-demos :: OpenGL diagnostics
+libva-utils :: VA-API diagnostics
+radeontop :: GPU utilization monitor

@@ -1,0 +1,342 @@
+#!/usr/bin/env bash
+# Show the active Hyprland keybinds in a searchable fuzzel menu.
+# Managed by workstation; reapply with ./install.sh 50.
+#
+# Binds come from `hyprctl binds` on every run, so the list always reflects what
+# is actually bound. Caelestia creates its binds without descriptions, so the
+# readable text comes from the table in describe() below, which follows the
+# keybind documentation in the caelestia-dots/caelestia README.
+
+set -uo pipefail
+
+print_only=false
+case ${1-} in
+  --print) print_only=true ;;
+  -h|--help)
+    printf 'Usage: %s [--print]\n\n  --print  write the keybinds to stdout instead of opening the menu\n' "${0##*/}"
+    exit 0
+    ;;
+  '') ;;
+  *) printf 'Unknown option: %s\n' "$1" >&2; exit 2 ;;
+esac
+
+command -v hyprctl >/dev/null 2>&1 || { printf 'hyprctl not found\n' >&2; exit 1; }
+
+if [[ ${print_only} == false ]]; then
+  command -v fuzzel >/dev/null 2>&1 || { printf 'fuzzel not found\n' >&2; exit 1; }
+  # Same toggle behaviour as Caelestia's own clipboard and emoji binds: a second
+  # press closes the menu instead of stacking another one.
+  if pkill fuzzel 2>/dev/null; then
+    exit 0
+  fi
+fi
+
+# --- reading binds -----------------------------------------------------------
+
+# The plain text output, not `hyprctl binds -j`: Hyprland emits invalid JSON for
+# binds (misaligned fields in bindsRequest), so the JSON cannot be parsed
+# reliably. Each record starts with a "bind" line followed by "\tkey: value".
+read_binds() {
+  hyprctl binds | awk '
+    function emit() {
+      if (!seen) return
+      seen = 0
+      key = f["key"]
+      if (key == "" && f["keycode"] != "0" && f["keycode"] != "") key = "code:" f["keycode"]
+      if (key == "") return
+      printf "%s\037%s\037%s\037%s\037%s\n", f["modmask"], key, f["description"], f["dispatcher"], f["arg"]
+    }
+    /^bind/ { emit(); seen = 1; delete f; next }
+    seen && match($0, /^\t[a-zA-Z_]+: /) { f[substr($0, 2, RLENGTH - 3)] = substr($0, RLENGTH + 1) }
+    seen && match($0, /^\t[a-zA-Z_]+:$/)  { f[substr($0, 2, RLENGTH - 2)] = "" }
+    END { emit() }
+  '
+}
+
+# Resolve raw keycodes only when some bind actually reports one. Compiling the
+# keymap is the slowest thing this script can do, and Caelestia binds by keysym
+# name, so normally this never runs.
+KEYCODES_RESOLVED=''
+resolve_keycode() {
+  local code=$1
+  if [[ -z ${KEYCODES_RESOLVED} ]]; then
+    KEYCODES_RESOLVED=yes
+    if command -v xkbcli >/dev/null 2>&1; then
+      KEYCODE_MAP=$(xkbcli compile-keymap 2>/dev/null | awk '
+        /xkb_keycodes/ { sec = "codes"; next }
+        /xkb_symbols/  { sec = "syms";  next }
+        sec == "codes" && match($0, /<[A-Za-z0-9_]+> *= *[0-9]+/) {
+          s = substr($0, RSTART, RLENGTH); gsub(/[<> ]/, "", s)
+          split(s, p, "="); code_by_name[p[1]] = p[2]
+        }
+        sec == "syms" && match($0, /key *<[A-Za-z0-9_]+> *\{ *\[ *[^,  \]]+/) {
+          s = substr($0, RSTART, RLENGTH); gsub(/key *</, "", s); gsub(/> *\{ *\[ */, "=", s); gsub(/ /, "", s)
+          split(s, p, "="); sym_by_name[p[1]] = p[2]
+        }
+        END { for (k in code_by_name) if (sym_by_name[k] != "" && sym_by_name[k] != "NoSymbol") print code_by_name[k] "=" sym_by_name[k] }
+      ') || KEYCODE_MAP=''
+    else
+      KEYCODE_MAP=''
+    fi
+  fi
+  local hit
+  hit=$(printf '%s\n' "${KEYCODE_MAP}" | grep -m1 "^${code}=" 2>/dev/null) || hit=''
+  if [[ -n ${hit} ]]; then printf '%s' "${hit#*=}"; else printf 'code:%s' "${code}"; fi
+}
+
+pretty_key() {
+  local key=$1
+  case ${key} in
+    code:*)    resolve_keycode "${key#code:}" ;;
+    mouse:272) printf 'Left Mouse' ;;
+    mouse:273) printf 'Right Mouse' ;;
+    mouse:274) printf 'Middle Mouse' ;;
+    mouse_up)   printf 'Scroll Up' ;;
+    mouse_down) printf 'Scroll Down' ;;
+    XF86*)     printf '%s' "${key#XF86}" ;;
+    SUPER_L|SUPER_R) printf 'Super (tap)' ;;
+    [a-z]*)
+      # left -> Left, page_down -> Page Down
+      local rest=${key:1}
+      printf '%s%s' "${key:0:1}" "${rest}" | sed -e 's/^./\U&/' -e 's/_/ /g'
+      ;;
+    *)         printf '%s' "${key//_/ }" ;;
+  esac
+}
+
+modifiers() {
+  local m=$1 out=''
+  if (( m & 64 )); then out+='SUPER + '; fi
+  if (( m &  4 )); then out+='CTRL + ';  fi
+  if (( m &  8 )); then out+='ALT + ';   fi
+  if (( m &  1 )); then out+='SHIFT + '; fi
+  printf '%s' "${out}"
+}
+
+# --- descriptions ------------------------------------------------------------
+
+# Descriptions.
+#
+# Hyprland compiles every bind created from a Lua config into the dispatcher
+# "__lua" with a callback number as its argument, so `hyprctl binds` cannot say
+# what a Caelestia bind does. The descriptions therefore key off the key
+# combination, taken from the keybind tables in the caelestia-dots/caelestia
+# README and hypr/variables.lua, plus this repository's own overrides.
+declare -A DESC=()
+
+# Upper case, spaces removed, XF86 prefix dropped. modifiers() always emits
+# SUPER, CTRL, ALT, SHIFT in that order and the table below is written the same
+# way, so normalised strings compare directly.
+normalise() {
+  local combo=${1//XF86/}
+  combo=${combo// /}
+  printf '%s' "${combo^^}"
+}
+
+load_descriptions() {
+  local cat combo desc n key
+  while IFS='|' read -r cat combo desc; do
+    [[ -n ${combo} ]] || continue
+    DESC["$(normalise "${combo}")"]="${cat}|${desc}"
+  done <<'TABLE'
+0|SUPER + SUPER_L|Open launcher
+0|SUPER + N|Toggle shell sidebar
+0|SUPER + B|Show all shell panels
+0|SUPER + K|Show this keybind cheatsheet
+0|CTRL + ALT + Delete|Open shell session menu
+0|CTRL + ALT + C|Clear shell notifications
+0|SUPER + L|Lock screen
+0|SUPER + ALT + L|Restore shell lockscreen
+0|SUPER + SHIFT + L|Sleep
+0|SUPER + CTRL + SHIFT + R|Kill shell
+0|SUPER + CTRL + ALT + R|Restart shell
+1|SUPER + ALT + S|Move window to special workspace
+1|SUPER + CTRL + SHIFT + Up|Move window to special workspace
+1|SUPER + CTRL + SHIFT + Down|Move window out of special workspace
+1|SUPER + ALT + mouse_down|Move window to next workspace
+1|SUPER + ALT + Page_Down|Move window to next workspace
+1|SUPER + CTRL + SHIFT + Right|Move window to next workspace
+1|SUPER + ALT + mouse_up|Move window to previous workspace
+1|SUPER + ALT + Page_Up|Move window to previous workspace
+1|SUPER + CTRL + SHIFT + Left|Move window to previous workspace
+1|SUPER + mouse_down|Go to next workspace
+1|SUPER + Page_Down|Go to next workspace
+1|SUPER + CTRL + Right|Go to next workspace
+1|SUPER + mouse_up|Go to previous workspace
+1|SUPER + Page_Up|Go to previous workspace
+1|SUPER + CTRL + Left|Go to previous workspace
+1|SUPER + CTRL + mouse_down|Go to next workspace group
+1|SUPER + CTRL + mouse_up|Go to previous workspace group
+2|SUPER + Left|Focus window left
+2|SUPER + Right|Focus window right
+2|SUPER + Up|Focus window up
+2|SUPER + Down|Focus window down
+2|SUPER + SHIFT + Left|Move window left
+2|SUPER + SHIFT + Right|Move window right
+2|SUPER + SHIFT + Up|Move window up
+2|SUPER + SHIFT + Down|Move window down
+2|SUPER + Minus|Decrease window width
+2|SUPER + ALT + Left|Decrease window width
+2|SUPER + Equal|Increase window width
+2|SUPER + ALT + Right|Increase window width
+2|SUPER + SHIFT + Minus|Decrease window height
+2|SUPER + ALT + Up|Decrease window height
+2|SUPER + SHIFT + Equal|Increase window height
+2|SUPER + ALT + Down|Increase window height
+2|SUPER + Z|Move window (drag)
+2|SUPER + mouse:272|Move window (drag)
+2|SUPER + X|Resize window (drag)
+2|SUPER + mouse:273|Resize window (drag)
+2|SUPER + CTRL + Backslash|Center window
+2|SUPER + CTRL + ALT + Backslash|Resize window to 55x70% and center
+2|SUPER + ALT + Backslash|Picture-in-picture mode
+2|SUPER + P|Pin window
+2|SUPER + F|Fullscreen window
+2|SUPER + ALT + F|Fullscreen window (bordered)
+2|SUPER + ALT + Space|Toggle floating for window
+2|SUPER + Q|Close window
+2|ALT + Tab|Next window in group
+2|ALT + SHIFT + Tab|Previous window in group
+2|CTRL + ALT + Tab|Next group
+2|CTRL + ALT + SHIFT + Tab|Previous group
+2|SUPER + U|Move window out of group
+2|SUPER + Comma|Toggle group
+2|SUPER + SHIFT + Comma|Lock active group
+3|SUPER + S|Toggle special workspace
+3|SUPER + M|Toggle music workspace
+3|SUPER + D|Toggle communication workspace
+3|SUPER + R|Toggle todo workspace
+3|CTRL + SHIFT + Escape|Toggle system monitor workspace
+4|SUPER + T|Terminal (ghostty)
+4|SUPER + W|Browser (zen-browser)
+4|SUPER + C|Editor (code)
+4|SUPER + E|File explorer (thunar)
+4|CTRL + ALT + V|Audio settings (pavucontrol)
+5|Print|Screenshot
+5|SUPER + SHIFT + S|Screenshot (freeze)
+5|SUPER + ALT + SHIFT + S|Screenshot (region)
+5|CTRL + ALT + R|Record fullscreen
+5|SUPER + ALT + R|Record with sound
+5|SUPER + ALT + SHIFT + R|Record region
+5|SUPER + SHIFT + C|Colour picker
+6|SUPER + CTRL + Space|Play/pause
+6|XF86AudioPlay|Play/pause
+6|XF86AudioPause|Play/pause
+6|SUPER + CTRL + Equal|Next track
+6|XF86AudioNext|Next track
+6|SUPER + CTRL + Minus|Previous track
+6|XF86AudioPrev|Previous track
+6|SUPER + CTRL + Backspace|Stop playback
+6|XF86AudioStop|Stop playback
+6|SUPER + SHIFT + M|Mute volume
+6|XF86AudioMute|Mute volume
+6|XF86AudioMicMute|Mute microphone
+6|XF86AudioRaiseVolume|Volume up
+6|XF86AudioLowerVolume|Volume down
+6|XF86MonBrightnessUp|Brightness up
+6|XF86MonBrightnessDown|Brightness down
+7|SUPER + V|Clipboard history
+7|SUPER + ALT + V|Clipboard history (delete mode)
+7|CTRL + ALT + SHIFT + V|Paste latest clipboard entry
+7|SUPER + Period|Emoji picker
+8|SUPER + ALT + F12|Test notification
+TABLE
+
+  # Caelestia binds workspaces in a loop over 1..10, where 10 maps to key 0.
+  for n in 1 2 3 4 5 6 7 8 9 10; do
+    key=$(( n % 10 ))
+    DESC["SUPER+${key}"]="1|Go to workspace ${n}"
+    DESC["SUPER+ALT+${key}"]="1|Move window to workspace ${n}"
+    DESC["SUPER+CTRL+${key}"]="1|Go to workspace group ${n}"
+    DESC["SUPER+CTRL+ALT+${key}"]="1|Move window to workspace group ${n}"
+  done
+}
+
+# Sets CATEGORY (sort order) and ACTION (display text) for one bind.
+describe() {
+  local combo=$1 dispatcher=$2 arg=$3 hit
+  hit=${DESC["$(normalise "${combo}")"]:-}
+  if [[ -n ${hit} ]]; then
+    CATEGORY=${hit%%|*}
+    ACTION=${hit#*|}
+  elif [[ ${dispatcher} == __lua || -z ${dispatcher} ]]; then
+    # A Lua bind with no table entry: the compositor cannot tell us more.
+    CATEGORY=9
+    ACTION='(no description)'
+  else
+    CATEGORY=9
+    ACTION="${dispatcher}${arg:+ ${arg}}"
+  fi
+}
+
+# --- rendering ---------------------------------------------------------------
+
+render() {
+  local modmask key desc dispatcher arg combo
+  load_descriptions
+  while IFS=$'\037' read -r modmask key desc dispatcher arg; do
+    [[ -n ${key} ]] || continue
+    # The launcher is SUPER held plus the SUPER key itself; rendering the
+    # modifier as well would read "SUPER + Super (tap)".
+    case ${key} in
+      SUPER_L|SUPER_R) combo='Super (tap)' ;;
+      *) combo="$(modifiers "${modmask}")$(pretty_key "${key}")" ;;
+    esac
+    if [[ -n ${desc} ]]; then
+      CATEGORY=0
+      ACTION=${desc}
+    else
+      describe "$(modifiers "${modmask}")${key}" "${dispatcher}" "${arg}"
+    fi
+    printf '%s\t%-30s  →  %s\n' "${CATEGORY}" "${combo}" "${ACTION}"
+  done < <(read_binds) | sort -t$'\t' -k1,1n -k2,2 -u | cut -d$'\t' -f2-
+}
+
+# --- fuzzel, themed from Caelestia's live scheme -----------------------------
+
+# ~/.config/hypr/scheme/current.lua is Caelestia's live palette: upstream's
+# variables.lua reads it for the window border colours, so the shell rewrites it
+# whenever the scheme changes. Reading it here keeps this menu in sync.
+scheme_args() {
+  local scheme="${XDG_CONFIG_HOME:-${HOME}/.config}/hypr/scheme/current.lua"
+  [[ -r ${scheme} ]] || return 0
+  fuzzel --help 2>&1 | grep -q -- '--match-color' || return 0
+
+  local -A c=()
+  local role hex
+  while read -r role hex; do
+    c[${role}]=${hex}
+  done < <(sed -nE 's/^[[:space:]]*([A-Za-z_]+)[[:space:]]*=[[:space:]]*"([0-9a-fA-F]{6})".*/\1 \2/p' "${scheme}")
+
+  for role in surfaceContainer onSurface surfaceContainerHigh primary onSurfaceVariant outline; do
+    [[ -n ${c[${role}]:-} ]] || return 0
+  done
+
+  printf '%s\n' \
+    "--background=${c[surfaceContainer]}f2" \
+    "--text-color=${c[onSurface]}ff" \
+    "--match-color=${c[primary]}ff" \
+    "--selection-color=${c[surfaceContainerHigh]}ff" \
+    "--selection-text-color=${c[onSurface]}ff" \
+    "--selection-match-color=${c[primary]}ff" \
+    "--border-color=${c[primary]}e6" \
+    "--prompt-color=${c[onSurfaceVariant]}ff" \
+    "--placeholder-color=${c[outline]}ff"
+}
+
+if [[ ${print_only} == true ]]; then
+  render
+  exit 0
+fi
+
+colours=()
+while IFS= read -r line; do
+  [[ -n ${line} ]] && colours+=("${line}")
+done < <(scheme_args)
+
+render | fuzzel --dmenu \
+  --prompt='keybinds > ' \
+  --placeholder='Type to search keybinds' \
+  --width=64 \
+  --lines=20 \
+  "${colours[@]}" >/dev/null 2>&1 || true

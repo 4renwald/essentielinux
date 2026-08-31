@@ -1,0 +1,15 @@
+# Desktop applications from Arch's official repositories.
+discord :: Discord chat
+github-cli :: GitHub CLI
+glab :: GitLab CLI
+bluetui :: Bluetooth TUI for the bluez stack
+openai-codex :: Codex CLI
+opencode :: OpenCode CLI
+mullvad-vpn :: Mullvad VPN client
+mpv :: video player and this system's browser-video upscaler
+yt-dlp :: URL resolver mpv's ytdl_hook calls
+mpv-shim-default-shaders :: GLSL shader pack linked into mpv by module 52
+obsidian :: Obsidian notes
+signal-desktop :: Signal messenger
+telegram-desktop :: Telegram client
+qemu-desktop :: QEMU with desktop VM modules; vm-curator drives it

@@ -1,0 +1,40 @@
+# Minimal Wayland desktop: Hyprland, its portals, and desktop utilities.
+# `*` marks packages the desktop cannot run without.
+*hyprland :: Wayland compositor
+*xdg-desktop-portal-hyprland :: screencast and portal backend for Hyprland
+*xdg-desktop-portal-gtk :: file chooser and settings portal
+*polkit :: privilege management
+*polkit-gnome :: the polkit agent Caelestia's execs.lua starts by absolute path
+*power-profiles-daemon :: performance profile switching
+qt5-wayland :: Wayland support for Qt 5 apps
+qt6-wayland :: Wayland support for Qt 6 apps
+accountsservice :: user account service for the greeter
+ghostty :: terminal emulator
+jq :: JSON processor
+fuzzel :: application launcher
+grim :: screenshot capture
+slurp :: region selection for screenshots
+wl-clipboard :: clipboard utilities
+cliphist :: clipboard history
+thunar :: file manager for Caelestia's SUPER+E keybinding
+gvfs :: virtual filesystem support for Thunar
+tumbler :: thumbnail service
+thunar-volman :: removable media management
+thunar-archive-plugin :: archive context menu for Thunar
+xarchiver :: archive manager
+ffmpegthumbnailer :: video thumbnails
+gvfs-mtp :: phone (MTP) support in Thunar
+gvfs-smb :: network share (SMB) support in Thunar
+p7zip :: archive support
+unrar :: RAR extraction
+ntfs-3g :: NTFS filesystem support
+exfatprogs :: exFAT filesystem support
+# What Caelestia's deployed configuration executes or names at runtime.
+gnome-keyring :: secret storage started by Caelestia's execs.lua
+geoclue :: location service for the optional night light
+gammastep :: night-light provider toggled with SUPER + SHIFT + N
+libnotify :: notification for the night-light toggle
+trash-cli :: prunes Thunar's trash after 30 days
+adw-gtk-theme :: GTK 3 matching theme written by Caelestia theme.py
+papirus-icon-theme :: icon theme written by Caelestia theme.py
+frameworkintegration :: Darkly dependency missing from its own PKGBUILD

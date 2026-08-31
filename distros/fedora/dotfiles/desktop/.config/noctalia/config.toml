@@ -1,0 +1,45 @@
+[shell]
+font_family = "JetBrainsMono Nerd Font"
+polkit_agent = false
+setup_wizard_enabled = false
+settings_show_advanced = true
+clipboard_enabled = true
+clipboard_keep_from_closed_apps = true
+clipboard_auto_paste = "auto"
+
+[shell.screenshot]
+save_to_file = true
+directory = "~/Pictures/Screenshots"
+copy_to_clipboard = true
+freeze_screen = true
+show_cursor = false
+
+[shell.launcher.providers.emoji]
+prefix = "emo"
+
+[wallpaper]
+enabled = true
+directory = "~/Pictures/Wallpapers"
+
+[theme]
+mode = "dark"
+source = "builtin"
+builtin = "Tokyo-Night"
+
+[theme.templates]
+enable_builtin_templates = true
+builtin_ids = ["btop", "ghostty", "gtk3", "gtk4", "hyprland", "qt", "starship"]
+enable_community_templates = true
+community_ids = []
+
+[location]
+auto_locate = true
+
+[nightlight]
+enabled = true
+force = false
+temperature_day = 6500
+temperature_night = 4000
+
+[brightness]
+enable_ddcutil = true

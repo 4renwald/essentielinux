@@ -1,0 +1,13 @@
+# Desktop conflicts and full Vim replacement.
+dolphin
+polkit-kde
+vim-enhanced
+code
+
+# Superseded by native shell services.
+bluez-tools
+cliphist
+geoclue2
+gammastep
+playerctl
+wl-clip-persist

@@ -1,0 +1,16 @@
+# Ghostty is the terminal Caelestia's keybindings launch (see hypr-vars.lua).
+# Managed by workstation; reapply with ./install.sh 50.
+#
+# No colours here on purpose. Caelestia writes the active scheme as escape
+# sequences to ~/.local/state/caelestia/sequences.txt and its fish config
+# replays them at every interactive start, so the palette follows the scheme
+# live. Setting colours in this file would freeze them instead.
+#
+# The rest mirrors Caelestia's own foot.ini so both terminals match.
+font-family = JetBrains Mono Nerd Font
+font-size = 12
+window-padding-x = 25
+window-padding-y = 25
+# foot uses alpha 0.78 with blur; Hyprland blurs the transparent surface.
+background-opacity = 0.78
+cursor-style = bar

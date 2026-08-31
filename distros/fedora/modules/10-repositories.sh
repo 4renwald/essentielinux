@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly DISTRO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly REPO_ROOT="$(cd -- "${DISTRO_ROOT}/../.." && pwd)"
+source "${REPO_ROOT}/lib/common.sh"
+
+fedora_release="$(rpm -E %fedora)"
+[[ ${fedora_release} =~ ^[0-9]+$ ]] || die "Unable to identify Fedora release: ${fedora_release}"
+
+log_step 'Enabling RPM Fusion Free and Nonfree'
+as_root dnf -y install \
+  "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-${fedora_release}.noarch.rpm" \
+  "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${fedora_release}.noarch.rpm"
+
+log_step 'Enabling required Fedora and official vendor repositories'
+as_root dnf -y install dnf5-plugins flatpak
+as_root dnf -y copr enable lionheartp/Hyprland
+as_root dnf -y copr enable scottames/ghostty
+
+deploy_system_file "${DISTRO_ROOT}/etc/yum.repos.d/vscodium.repo" /etc/yum.repos.d/vscodium.repo
+deploy_system_file "${DISTRO_ROOT}/etc/yum.repos.d/claude-code.repo" /etc/yum.repos.d/claude-code.repo
+if as_root test -e /etc/yum.repos.d/vscode.repo; then
+  as_root rm -f -- /etc/yum.repos.d/vscode.repo
+  log_warn 'Removed the obsolete Microsoft editor repository definition.'
+fi
+as_root dnf config-manager addrepo --overwrite \
+  --from-repofile='https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo'
+as_root dnf config-manager addrepo --overwrite \
+  --from-repofile='https://repository.mullvad.net/rpm/stable/mullvad.repo'
+
+as_root flatpak remote-add --system --if-not-exists flathub \
+  'https://dl.flathub.org/repo/flathub.flatpakrepo'
+
+log_success 'RPM Fusion, COPR, vendor RPM repositories, and Flathub are enabled.'

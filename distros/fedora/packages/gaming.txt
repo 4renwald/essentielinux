@@ -1,0 +1,17 @@
+# Gaming stack. The 32-bit entries exist for Steam and older Windows games.
+steam :: Steam client
+steam-devices :: controller mappings
+gamemode :: performance mode on demand
+gamemode.i686 :: GameMode for 32-bit games
+mangohud :: performance overlay
+mangohud.i686 :: performance overlay for 32-bit games
+goverlay :: MangoHud configuration GUI
+gamescope :: micro-compositor for games
+ntsync-autoload :: NTSYNC fast synchronization
+vulkan-loader :: Vulkan loader
+vulkan-loader.i686 :: Vulkan loader for 32-bit games
+protontricks :: per-game Proton tweaks
+vkBasalt :: Vulkan post-processing
+vkBasalt.i686 :: vkBasalt for 32-bit games
+wine :: Windows compatibility layer
+winetricks :: Wine helper scripts

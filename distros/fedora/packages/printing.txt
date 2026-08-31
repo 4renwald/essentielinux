@@ -1,0 +1,9 @@
+# Printing support.
+cups :: print server
+cups-filters :: printing filters
+cups-pdf :: print to PDF
+hplip :: HP printer support
+gutenprint :: high quality printer drivers
+system-config-printer :: printer configuration tool
+foomatic-db :: printer database
+foomatic-db-ppds :: printer PPD files

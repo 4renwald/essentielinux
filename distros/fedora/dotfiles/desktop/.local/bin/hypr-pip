@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+hyprctl dispatch togglefloating
+hyprctl dispatch resizeactive exact '25%' '25%'
+hyprctl dispatch moveactive exact '73%' '72%'
+hyprctl dispatch pin

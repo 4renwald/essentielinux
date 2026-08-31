@@ -71,6 +71,18 @@ if feature_enabled bluetui; then
   install --mode=0755 "${WORK_DIR}/bluetui" "${HOME}/.local/bin/bluetui"
 fi
 
+if feature_enabled hyprmod; then
+  log_step 'Installing hyprmod (GTK4 settings app for Hyprland)'
+  # hyprmod is a PyGObject application and pycairo ships no Linux wheels, so
+  # building its venv with uv or pipx alone would compile C extensions. The
+  # venv instead reuses Fedora's own python3-gobject and python3-cairo.
+  as_root dnf -y install pipx python3-gobject
+  pipx install --force --system-site-packages \
+    git+https://github.com/BlueManCZ/hyprmod.git
+  "${HOME}/.local/bin/hyprmod" --install
+  log_success 'hyprmod installed; desktop entry registered.'
+fi
+
 if feature_enabled fonts; then
   log_step 'Installing Nerd Fonts from official releases'
   system_font_dir=/usr/local/share/fonts/managed-workstation
@@ -149,10 +161,11 @@ fi
 
 if feature_enabled chatgpt; then
   log_step 'Installing the official ChatGPT desktop RPM for Fedora'
-  download \
-    'https://persistent.oaistatic.com/codex-app-prod/linux/rpm/latest/chatgpt.x86_64.rpm' \
-    "${WORK_DIR}/chatgpt.x86_64.rpm"
-  as_root dnf -y install "${WORK_DIR}/chatgpt.x86_64.rpm"
+  # dnf installs straight from the URL into its own cache; staging large RPMs
+  # in WORK_DIR piled up until the module exited and exhausted /tmp (curl
+  # error 23 on tmpfs).
+  as_root dnf -y install \
+    'https://persistent.oaistatic.com/codex-app-prod/linux/rpm/latest/chatgpt.x86_64.rpm'
 fi
 
 if feature_enabled keeper; then
@@ -164,41 +177,37 @@ if feature_enabled keeper; then
   printf '%s  %s\n' "${KEEPER_SHA256}" "${keeper_rpm}" | sha256sum --check --status \
     || die 'The Keeper RPM checksum did not match the audited vendor package.'
   as_root dnf -y install "${keeper_rpm}"
+  rm -f -- "${keeper_rpm}"
 fi
 
 if feature_enabled opencode-desktop; then
   log_step 'Installing the official OpenCode desktop RPM'
-  download \
-    'https://opencode.ai/download/stable/linux-x64-rpm' \
-    "${WORK_DIR}/opencode-desktop.x86_64.rpm"
+  opencode_desktop_rpm="$(github_asset_url anomalyco/opencode \
+    '^opencode-desktop-linux-x86_64[.]rpm$')" \
+    || die 'Unable to find the official opencode-desktop-linux-x86_64 release asset.'
   # The desktop RPM is named `opencode`, but it installs its GUI as
   # `ai.opencode.desktop`; it does not overwrite the separate OpenCode CLI in
   # ~/.local/bin/opencode installed above.
-  as_root dnf -y install "${WORK_DIR}/opencode-desktop.x86_64.rpm"
+  as_root dnf -y install "${opencode_desktop_rpm}"
 fi
 
 if feature_enabled megasync; then
   log_step 'Installing the official MEGAsync RPM for Fedora 44'
-  download \
-    'https://mega.nz/linux/repo/Fedora_44/x86_64/megasync-Fedora_44.x86_64.rpm' \
-    "${WORK_DIR}/megasync-Fedora_44.x86_64.rpm"
-  as_root dnf -y install "${WORK_DIR}/megasync-Fedora_44.x86_64.rpm"
+  as_root dnf -y install \
+    'https://mega.nz/linux/repo/Fedora_44/x86_64/megasync-Fedora_44.x86_64.rpm'
 fi
 
 if feature_enabled proton-mail; then
   log_step 'Installing the official Proton Mail desktop RPM'
-  download \
-    'https://proton.me/download/mail/linux/1.13.4/ProtonMail-desktop-beta.rpm' \
-    "${WORK_DIR}/ProtonMail-desktop-beta.rpm"
-  as_root dnf -y install "${WORK_DIR}/ProtonMail-desktop-beta.rpm"
+  as_root dnf -y install \
+    'https://proton.me/download/mail/linux/1.13.4/ProtonMail-desktop-beta.rpm'
 fi
 
 if feature_enabled vm-curator; then
   log_step 'Installing the official vm-curator RPM'
   vm_curator_url="$(github_asset_url mroboff/vm-curator '^vm-curator-[0-9.]+-1[.]x86_64[.]rpm$')" \
     || die 'Unable to find the official vm-curator x86_64 RPM release.'
-  download "${vm_curator_url}" "${WORK_DIR}/vm-curator.x86_64.rpm"
-  as_root dnf -y install "${WORK_DIR}/vm-curator.x86_64.rpm"
+  as_root dnf -y install "${vm_curator_url}"
 fi
 
 log_success 'Enabled upstream tools, fonts, cursor, and vendor RPMs are installed.'

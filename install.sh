@@ -168,6 +168,11 @@ for id in "${SELECTED[@]}"; do
   run_module "${id}"
 done
 
+if ((${#FAILED_MODULES[@]} > 0)); then
+  log_error "Setup finished with ${#FAILED_MODULES[@]} failed step(s): ${FAILED_MODULES[*]}"
+  exit 1
+fi
+
 log_success "✨ ${DISTRO_ID} setup completed: ${SELECTED[*]}."
 # Each distro may define distro_final_notes in its catalogue.
 if declare -F distro_final_notes >/dev/null 2>&1; then

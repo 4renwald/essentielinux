@@ -6,6 +6,7 @@ lazygit :: LazyGit TUI
 starship :: Starship prompt
 spicetify :: Spicetify CLI
 bluetui :: Bluetooth TUI
+hyprmod :: GTK4 settings app for Hyprland
 fonts :: JetBrainsMono and Nerd Font symbols
 bibata :: Bibata Modern Classic cursor
 shaders :: mpv shader pack (ArtCNN, Anime4K, FSRCNNX)

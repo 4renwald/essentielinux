@@ -22,6 +22,10 @@ readonly GPU_LABELS=(
 )
 readonly GPU_VALUES=(nvidia amd intel none)
 
+# Steps that failed during this run; install.sh turns this into a non-zero
+# exit and a summary instead of reporting success over a partial setup.
+declare -a FAILED_MODULES=()
+
 # ── Module catalogue ─────────────────────────────────────────────────────────
 
 module_row() {
@@ -41,7 +45,7 @@ module_index() {
 }
 
 run_module() {
-  local id=$1 index file name
+  local id=$1 index file name status
   index="$(module_index "${id}")" || die "No module is numbered ${id}."
   file="$(find "${DISTRO_ROOT}/modules" -maxdepth 1 -type f -name "${id}-*.sh" -print -quit)"
   [[ -n ${file} ]] || die "No module starts with ${id}."
@@ -49,7 +53,11 @@ run_module() {
   printf '\n%s╭──── %s  %s%s\n' "${C_CYAN}" "${id}" "${name}" "${C_RESET}"
   if bash "${file}"; then
     printf '%s╰──── %s  %s%s\n' "${C_DIM}" "${id}" "${name}" "${C_RESET}"
+    return 0
   fi
+  status=$?
+  FAILED_MODULES+=("${id} ${name} (exit ${status})")
+  log_error "Step ${id} ${name} failed (exit ${status}); later steps still ran. Fix the cause, then rerun ./install.sh ${id}."
 }
 
 # ── Package customization ────────────────────────────────────────────────────

@@ -12,18 +12,40 @@ local env = {
     "ELECTRON_OZONE_PLATFORM_HINT,wayland",
     "_JAVA_AWT_WM_NONREPARENTING,1",
     "WLR_NO_HARDWARE_CURSORS,1",
-    "LIBVA_DRIVER_NAME,nvidia",
-    "GBM_BACKEND,nvidia-drm",
-    "__GLX_VENDOR_LIBRARY_NAME,nvidia",
-    "NVD_BACKEND,direct",
     "TERMINAL,ghostty",
     "BROWSER,zen-browser",
     "EDITOR,codium",
 }
 
+-- The NVIDIA variables poison the GL/EGL stack on AMD, Intel, and VM sessions
+-- (GTK4 apps such as Ghostty abort at startup), so export them only when the
+-- installer recorded nvidia as this machine's GPU vendor.
+local gpu_vendor = ""
+local gpu_state = io.open((os.getenv("HOME") or "") .. "/.local/state/workstation/fedora/gpu", "r")
+if gpu_state then
+    gpu_vendor = (gpu_state:read("*l") or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    gpu_state:close()
+end
+if gpu_vendor == "nvidia" then
+    table.insert(env, "LIBVA_DRIVER_NAME,nvidia")
+    table.insert(env, "GBM_BACKEND,nvidia-drm")
+    table.insert(env, "__GLX_VENDOR_LIBRARY_NAME,nvidia")
+    table.insert(env, "NVD_BACKEND,direct")
+end
+
 for _, item in ipairs(env) do
     local key, value = item:match("^([^,]+),(.+)$")
     if key and value then hl.env(key, value) end
+end
+
+-- The greetd session does not carry ~/.local/bin on PATH, which hides every
+-- CLI and wrapper the installer places there (codex, opencode, starship,
+-- zen-browser, ...).
+local home = os.getenv("HOME") or ""
+local local_bin = home .. "/.local/bin"
+local session_path = os.getenv("PATH") or ""
+if not (":" .. session_path .. ":"):find(local_bin, 1, true) then
+    hl.env("PATH", local_bin .. ":" .. session_path)
 end
 
 hl.on("hyprland.start", function()

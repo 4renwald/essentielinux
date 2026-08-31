@@ -9,8 +9,10 @@ local function bind(keys, command, description, options)
     hl.bind(keys, hl.dsp.exec_cmd(command), options)
 end
 
-local function dispatch(command)
-    return "hyprctl dispatch " .. command
+local function native_bind(keys, dispatcher, description, options)
+    options = options or {}
+    options.description = description
+    hl.bind(keys, dispatcher, options)
 end
 
 -- Shell and session actions use Noctalia v5 IPC while retaining the established
@@ -29,29 +31,29 @@ bind("SUPER + CTRL + ALT + R", "pkill noctalia; noctalia", "Restart shell", { re
 bind("SUPER + SHIFT + N", ipc .. "nightlight-force-toggle", "Toggle night-light adjustment")
 
 -- Regular and grouped workspaces.
-bind("SUPER + ALT + S", dispatch("movetoworkspacesilent special"), "Move window to special workspace")
-bind("SUPER + CTRL + SHIFT + Up", dispatch("movetoworkspacesilent special"), "Move window to special workspace")
-bind("SUPER + CTRL + SHIFT + Down", dispatch("movetoworkspace e+0"), "Move window out of special workspace")
+native_bind("SUPER + ALT + S", hl.dsp.window.move({ workspace = "special:special", follow = false }), "Move window to special workspace")
+native_bind("SUPER + CTRL + SHIFT + Up", hl.dsp.window.move({ workspace = "special:special", follow = false }), "Move window to special workspace")
+native_bind("SUPER + CTRL + SHIFT + Down", hl.dsp.window.move({ workspace = "e+0" }), "Move window out of special workspace")
 
 for _, keys in ipairs({ "SUPER + ALT + mouse_down", "SUPER + ALT + Page_Down", "SUPER + CTRL + SHIFT + Right" }) do
-    bind(keys, dispatch("movetoworkspacesilent r+1"), "Move window to next workspace")
+    native_bind(keys, hl.dsp.window.move({ workspace = "r+1", follow = false }), "Move window to next workspace")
 end
 for _, keys in ipairs({ "SUPER + ALT + mouse_up", "SUPER + ALT + Page_Up", "SUPER + CTRL + SHIFT + Left" }) do
-    bind(keys, dispatch("movetoworkspacesilent r-1"), "Move window to previous workspace")
+    native_bind(keys, hl.dsp.window.move({ workspace = "r-1", follow = false }), "Move window to previous workspace")
 end
 for _, keys in ipairs({ "SUPER + mouse_down", "SUPER + Page_Down", "SUPER + CTRL + Right" }) do
-    bind(keys, dispatch("workspace r+1"), "Go to next workspace")
+    native_bind(keys, hl.dsp.focus({ workspace = "r+1" }), "Go to next workspace")
 end
 for _, keys in ipairs({ "SUPER + mouse_up", "SUPER + Page_Up", "SUPER + CTRL + Left" }) do
-    bind(keys, dispatch("workspace r-1"), "Go to previous workspace")
+    native_bind(keys, hl.dsp.focus({ workspace = "r-1" }), "Go to previous workspace")
 end
 bind("SUPER + CTRL + mouse_down", bin .. "hypr-workspace-group next-group", "Go to next workspace group")
 bind("SUPER + CTRL + mouse_up", bin .. "hypr-workspace-group previous-group", "Go to previous workspace group")
 
 for workspace = 1, 10 do
     local key = tostring(workspace % 10)
-    bind("SUPER + " .. key, dispatch("workspace " .. workspace), "Go to workspace " .. workspace)
-    bind("SUPER + ALT + " .. key, dispatch("movetoworkspacesilent " .. workspace), "Move window to workspace " .. workspace)
+    native_bind("SUPER + " .. key, hl.dsp.focus({ workspace = workspace }), "Go to workspace " .. workspace)
+    native_bind("SUPER + ALT + " .. key, hl.dsp.window.move({ workspace = workspace, follow = false }), "Move window to workspace " .. workspace)
     bind("SUPER + CTRL + " .. key, bin .. "hypr-workspace-group focus-slot " .. workspace, "Go to workspace group " .. workspace)
     bind("SUPER + CTRL + ALT + " .. key, bin .. "hypr-workspace-group move-slot " .. workspace, "Move window to workspace group " .. workspace)
 end
@@ -60,45 +62,45 @@ end
 for _, item in ipairs({
     {"Left", "l"}, {"Right", "r"}, {"Up", "u"}, {"Down", "d"},
 }) do
-    bind("SUPER + " .. item[1], dispatch("movefocus " .. item[2]), "Focus window " .. item[1]:lower())
-    bind("SUPER + SHIFT + " .. item[1], dispatch("movewindow " .. item[2]), "Move window " .. item[1]:lower())
+    native_bind("SUPER + " .. item[1], hl.dsp.focus({ direction = item[1]:lower() }), "Focus window " .. item[1]:lower())
+    native_bind("SUPER + SHIFT + " .. item[1], hl.dsp.window.move({ direction = item[1]:lower() }), "Move window " .. item[1]:lower())
 end
 
-bind("SUPER + Minus", dispatch("resizeactive -10 0"), "Decrease window width", { repeating = true })
-bind("SUPER + ALT + Left", dispatch("resizeactive -10 0"), "Decrease window width", { repeating = true })
-bind("SUPER + Equal", dispatch("resizeactive 10 0"), "Increase window width", { repeating = true })
-bind("SUPER + ALT + Right", dispatch("resizeactive 10 0"), "Increase window width", { repeating = true })
-bind("SUPER + SHIFT + Minus", dispatch("resizeactive 0 -10"), "Decrease window height", { repeating = true })
-bind("SUPER + ALT + Up", dispatch("resizeactive 0 -10"), "Decrease window height", { repeating = true })
-bind("SUPER + SHIFT + Equal", dispatch("resizeactive 0 10"), "Increase window height", { repeating = true })
-bind("SUPER + ALT + Down", dispatch("resizeactive 0 10"), "Increase window height", { repeating = true })
+native_bind("SUPER + Minus", hl.dsp.window.resize({ x = -10, y = 0, relative = true }), "Decrease window width", { repeating = true })
+native_bind("SUPER + ALT + Left", hl.dsp.window.resize({ x = -10, y = 0, relative = true }), "Decrease window width", { repeating = true })
+native_bind("SUPER + Equal", hl.dsp.window.resize({ x = 10, y = 0, relative = true }), "Increase window width", { repeating = true })
+native_bind("SUPER + ALT + Right", hl.dsp.window.resize({ x = 10, y = 0, relative = true }), "Increase window width", { repeating = true })
+native_bind("SUPER + SHIFT + Minus", hl.dsp.window.resize({ x = 0, y = -10, relative = true }), "Decrease window height", { repeating = true })
+native_bind("SUPER + ALT + Up", hl.dsp.window.resize({ x = 0, y = -10, relative = true }), "Decrease window height", { repeating = true })
+native_bind("SUPER + SHIFT + Equal", hl.dsp.window.resize({ x = 0, y = 10, relative = true }), "Increase window height", { repeating = true })
+native_bind("SUPER + ALT + Down", hl.dsp.window.resize({ x = 0, y = 10, relative = true }), "Increase window height", { repeating = true })
 
 hl.bind("SUPER + Z", hl.dsp.window.drag(), { description = "Move window (drag)" })
 hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true, description = "Move window (drag)" })
 hl.bind("SUPER + X", hl.dsp.window.resize(), { description = "Resize window (drag)" })
 hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true, description = "Resize window (drag)" })
-bind("SUPER + CTRL + Backslash", dispatch("centerwindow"), "Center window")
-bind("SUPER + CTRL + ALT + Backslash", dispatch("resizeactive exact 55% 70%; hyprctl dispatch centerwindow"), "Resize window to 55x70% and center")
+native_bind("SUPER + CTRL + Backslash", hl.dsp.window.center(), "Center window")
+bind("SUPER + CTRL + ALT + Backslash", "hyprctl dispatch resizeactive exact 55% 70%; hyprctl dispatch centerwindow", "Resize window to 55x70% and center")
 bind("SUPER + ALT + Backslash", bin .. "hypr-pip", "Picture-in-picture mode")
-bind("SUPER + P", dispatch("pin"), "Pin window")
-bind("SUPER + F", dispatch("fullscreen 0"), "Fullscreen window")
-bind("SUPER + ALT + F", dispatch("fullscreen 1"), "Fullscreen window (bordered)")
-bind("SUPER + ALT + Space", dispatch("togglefloating"), "Toggle floating for window")
-bind("SUPER + Q", dispatch("killactive"), "Close window")
-bind("ALT + Tab", dispatch("cyclenext"), "Next window")
-bind("ALT + SHIFT + Tab", dispatch("cyclenext prev"), "Previous window")
-bind("CTRL + ALT + Tab", dispatch("changegroupactive f"), "Next window in group")
-bind("CTRL + ALT + SHIFT + Tab", dispatch("changegroupactive b"), "Previous window in group")
-bind("SUPER + U", dispatch("moveoutofgroup"), "Move window out of group")
-bind("SUPER + Comma", dispatch("togglegroup"), "Toggle group")
-bind("SUPER + SHIFT + Comma", dispatch("lockactivegroup toggle"), "Lock active group")
+native_bind("SUPER + P", hl.dsp.window.pin(), "Pin window")
+native_bind("SUPER + F", hl.dsp.window.fullscreen(), "Fullscreen window")
+native_bind("SUPER + ALT + F", hl.dsp.window.fullscreen({ mode = "maximized" }), "Fullscreen window (bordered)")
+native_bind("SUPER + ALT + Space", hl.dsp.window.float(), "Toggle floating for window")
+native_bind("SUPER + Q", hl.dsp.window.close(), "Close window")
+native_bind("ALT + Tab", hl.dsp.window.cycle_next(), "Next window")
+native_bind("ALT + SHIFT + Tab", hl.dsp.window.cycle_next({ next = false }), "Previous window")
+native_bind("CTRL + ALT + Tab", hl.dsp.group.next(), "Next window in group")
+native_bind("CTRL + ALT + SHIFT + Tab", hl.dsp.group.prev(), "Previous window in group")
+native_bind("SUPER + U", hl.dsp.window.move({ out_of_group = true }), "Move window out of group")
+native_bind("SUPER + Comma", hl.dsp.group.toggle(), "Toggle group")
+native_bind("SUPER + SHIFT + Comma", hl.dsp.group.lock_active(), "Lock active group")
 
 -- Special workspaces.
 hl.bind("SUPER + S", input.toggle_active_special, { description = "Toggle special workspace" })
-bind("SUPER + M", dispatch("togglespecialworkspace music"), "Toggle music workspace")
-bind("SUPER + D", dispatch("togglespecialworkspace communication"), "Toggle communication workspace")
-bind("SUPER + R", dispatch("togglespecialworkspace todo"), "Toggle todo workspace")
-bind("CTRL + SHIFT + Escape", dispatch("exec [workspace special:sysmon silent] ghostty -e btop; hyprctl dispatch togglespecialworkspace sysmon"), "Toggle system monitor workspace")
+native_bind("SUPER + M", hl.dsp.workspace.toggle_special("music"), "Toggle music workspace")
+native_bind("SUPER + D", hl.dsp.workspace.toggle_special("communication"), "Toggle communication workspace")
+native_bind("SUPER + R", hl.dsp.workspace.toggle_special("todo"), "Toggle todo workspace")
+bind("CTRL + SHIFT + Escape", "hyprctl dispatch exec '[workspace special:sysmon silent] ghostty -e btop'; hyprctl dispatch togglespecialworkspace sysmon", "Toggle system monitor workspace")
 
 -- Applications.
 bind("SUPER + T", "ghostty", "Terminal (ghostty)")

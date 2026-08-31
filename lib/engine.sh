@@ -54,10 +54,13 @@ run_module() {
   if bash "${file}"; then
     printf '%s╰──── %s  %s%s\n' "${C_DIM}" "${id}" "${name}" "${C_RESET}"
     return 0
+  else
+    # An if without an else reports 0 when its condition fails, so the real
+    # module exit status is only visible inside the else branch.
+    status=$?
+    FAILED_MODULES+=("${id} ${name} (exit ${status})")
+    log_error "Step ${id} ${name} failed (exit ${status}); later steps still ran. Fix the cause, then rerun ./install.sh ${id}."
   fi
-  status=$?
-  FAILED_MODULES+=("${id} ${name} (exit ${status})")
-  log_error "Step ${id} ${name} failed (exit ${status}); later steps still ran. Fix the cause, then rerun ./install.sh ${id}."
 }
 
 # ── Package customization ────────────────────────────────────────────────────

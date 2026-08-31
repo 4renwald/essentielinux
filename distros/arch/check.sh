@@ -558,7 +558,12 @@ fi
 
 if grep -qi nvidia <<< "${graphics_devices}"; then
   log_step "NVIDIA driver"
-  for package in nvidia-utils lib32-nvidia-utils libva-nvidia-driver; do
+  nvidia_flavor="$(nvidia_kernel_module_flavor 2>/dev/null || true)"
+  if [[ -z ${nvidia_flavor} ]]; then
+    fail 'NVIDIA is present but its display PCI ID could not be classified.'
+    nvidia_flavor=unsupported
+  fi
+  for package in libva-nvidia-driver; do
     check_package "${package}"
   done
 
@@ -574,12 +579,27 @@ if grep -qi nvidia <<< "${graphics_devices}"; then
   done
   if [[ ${#installed_nvidia_kernels[@]} -eq 0 ]]; then
     fail "No supported Arch kernel is installed for the NVIDIA driver."
+  elif [[ ${nvidia_flavor} == proprietary ]]; then
+    for package in nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils; do
+      check_package "${package}"
+    done
+    for kernel in "${installed_nvidia_kernels[@]}"; do
+      check_package "${kernel}-headers"
+    done
+  elif [[ ${nvidia_flavor} == unsupported ]]; then
+    fail 'This NVIDIA GPU needs a legacy branch older than 580xx. Its driver is not managed by this repository.'
   elif [[ ${use_nvidia_dkms} == true ]]; then
+    for package in nvidia-utils lib32-nvidia-utils; do
+      check_package "${package}"
+    done
     check_package nvidia-open-dkms
     for kernel in "${installed_nvidia_kernels[@]}"; do
       check_package "${kernel}-headers"
     done
   else
+    for package in nvidia-utils lib32-nvidia-utils; do
+      check_package "${package}"
+    done
     for kernel in "${installed_nvidia_kernels[@]}"; do
       case "${kernel}" in
         linux) check_package nvidia-open ;;
@@ -611,8 +631,8 @@ if grep -qi nvidia <<< "${graphics_devices}"; then
     fail "NVIDIA DRM modesetting is not enabled."
   fi
 
-  # Video-memory preservation comes from nvidia-utils' own modprobe.d drop-in
-  # on 595+ open modules; this repository deliberately configures nothing.
+  # Video-memory preservation comes from the packaged NVIDIA configuration;
+  # this repository deliberately adds no module parameter overrides.
   nvidia_params="$(cat /proc/driver/nvidia/params 2>/dev/null || true)"
   if grep -qE '^[[:space:]]*UseKernelSuspendNotifiers:[[:space:]]*1[[:space:]]*$' <<< "${nvidia_params}"; then
     pass "NVIDIA preserves video memory across sleep through kernel suspend notifiers."

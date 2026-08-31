@@ -18,15 +18,32 @@ local env = {
 }
 
 -- The NVIDIA variables poison the GL/EGL stack on AMD, Intel, and VM sessions
--- (GTK4 apps such as Ghostty abort at startup), so export them only when the
--- installer recorded nvidia as this machine's GPU vendor.
-local gpu_vendor = ""
-local gpu_state = io.open((os.getenv("HOME") or "") .. "/.local/state/workstation/fedora/gpu", "r")
-if gpu_state then
-    gpu_vendor = (gpu_state:read("*l") or ""):gsub("^%s+", ""):gsub("%s+$", "")
-    gpu_state:close()
+-- (GTK4 apps such as Ghostty abort at startup). Only use them when the primary
+-- DRM card is NVIDIA. This also keeps hybrid laptops on their Intel or AMD
+-- display GPU unless the firmware exposes NVIDIA as the primary card.
+local function read_trimmed(path)
+    local file = io.open(path, "r")
+    if not file then return nil end
+    local value = (file:read("*l") or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    file:close()
+    return value
 end
-if gpu_vendor == "nvidia" then
+
+local primary_nvidia = false
+local primary_detected = false
+for card = 0, 15 do
+    local base = "/sys/class/drm/card" .. card .. "/device/"
+    if read_trimmed(base .. "boot_vga") == "1" then
+        primary_detected = true
+        primary_nvidia = read_trimmed(base .. "vendor") == "0x10de"
+        break
+    end
+end
+if not primary_detected then
+    primary_nvidia = read_trimmed("/sys/class/drm/card0/device/vendor") == "0x10de"
+end
+
+if primary_nvidia then
     table.insert(env, "LIBVA_DRIVER_NAME,nvidia")
     table.insert(env, "GBM_BACKEND,nvidia-drm")
     table.insert(env, "__GLX_VENDOR_LIBRARY_NAME,nvidia")

@@ -19,17 +19,12 @@ done
 [[ -z ${WORKSTATION_GPU:-} ]] || valid_gpu_vendor "${WORKSTATION_GPU}" \
   || die "Invalid WORKSTATION_GPU '${WORKSTATION_GPU}'. Use nvidia, amd, intel, or none."
 
-gpu_detect_display=''
-if gpu="$(gpu_vendor)"; then
-  gpu_detect_display="${gpu}"
+mapfile -t detected < <(gpu_driver_vendors)
+if ((${#detected[@]} > 0)); then
+  gpu_detect_display="${detected[*]}"
 else
-  mapfile -t detected < <(gpu_hardware_vendors)
-  if ((${#detected[@]} > 1)); then
-    gpu_detect_display="ambiguous (${detected[*]})"
-  else
-    gpu_detect_display='not detected'
-  fi
+  gpu_detect_display='not detected'
 fi
 
 log_success "Fedora ${VERSION_ID} x86_64 passed preflight."
-log_info "GPU vendor: ${gpu_detect_display} (override with WORKSTATION_GPU or ./install.sh)"
+log_info "GPU driver stacks: ${gpu_detect_display} (override with WORKSTATION_GPU or --gpu)"

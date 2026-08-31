@@ -54,14 +54,14 @@ declare -A MANIFEST_LABELS=(
 
 # Fill MANIFESTS with the selectable package groups of a step.
 step_manifests() {
-  local id=$1 gpu
+  local id gpu
   MANIFESTS=()
   case ${id} in
     20)
       MANIFESTS=(core desktop shell apps)
-      if gpu="$(gpu_vendor)" && [[ ${gpu} != none ]]; then
+      while IFS= read -r gpu; do
         MANIFESTS+=("${gpu}")
-      fi
+      done < <(gpu_driver_vendors)
       ;;
     25) MANIFESTS=(audio) ;;
     26) MANIFESTS=(gaming) ;;
@@ -73,10 +73,11 @@ step_manifests() {
 # Post-run guidance, called by install.sh when the run finishes.
 distro_final_notes() {
   local gpu
-  gpu="$(gpu_vendor 2>/dev/null || true)"
   for id in "${SELECTED[@]}"; do
-    if [[ ${id} == 20 && ${gpu} == nvidia ]]; then
-      log_warn 'Reboot after the NVIDIA akmod finishes building. Check it first with: modinfo -F version nvidia'
-    fi
+    [[ ${id} == 20 ]] || continue
+    while IFS= read -r gpu; do
+      [[ ${gpu} == nvidia ]] \
+        && log_warn 'Reboot after the NVIDIA akmod finishes building. Check it first with: modinfo -F version nvidia'
+    done < <(gpu_driver_vendors)
   done
 }

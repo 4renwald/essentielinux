@@ -46,10 +46,10 @@ declare -a args=() SELECTED=() PICK_CHECKED=() MANIFESTS=()
 
 usage() {
   cat <<'EOF'
-Usage: ./install.sh                 Interactive GPU and module picker
+Usage: ./install.sh                 Interactive module picker
        ./install.sh 20 30 35        Run specific module steps
        ./install.sh --list          List the detected distro's modules
-       ./install.sh --gpu amd 20    Force a GPU vendor for this run
+       ./install.sh --gpu amd 20    Override automatic GPU detection for this run
        WORKSTATION_GPU=none ./install.sh 20
 
 The installer detects the distro from /etc/os-release (Fedora or Arch), then
@@ -58,8 +58,8 @@ loads that distro's modules, manifests, and device-specific steps.
 Interactive mode: space toggles steps, enter runs, c customizes the highlighted
 step package by package, and the "Customize packages" row at the bottom opens a
 browser over every package group. Package choices apply only to the current
-run. One password prompt covers the whole run. Override the GPU with --gpu or
-WORKSTATION_GPU (nvidia, amd, intel, none).
+run. All detected GPU driver stacks are installed, including hybrid systems.
+Use --gpu or WORKSTATION_GPU (nvidia, amd, intel, none) only to override that.
 EOF
 }
 
@@ -108,7 +108,6 @@ fi
 menu_banner "${DISTRO_INFO}"
 
 if ((${#args[@]} == 0)); then
-  pick_gpu_interactively
   pick_modules_interactively
   ((${#SELECTED[@]} > 0)) || menu_interrupted
 else

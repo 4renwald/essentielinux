@@ -2,7 +2,7 @@
 
 > A fresh Linux install, dressed up and ready to dance.
 
-This is my installer for Fedora and Arch machines. It detects the distro, then sets up the packages, system files, and dotfiles for a native Hyprland desktop. Fedora uses Noctalia and Arch uses Caelestia.
+This is my installer for Fedora and Arch machines. It detects the distro, then sets up the packages, system files, and dotfiles for a native Hyprland desktop. Fedora uses Noctalia and Arch uses Caelestia. Every detected Intel, AMD, and NVIDIA display GPU gets the matching driver stack, so hybrid machines are covered too.
 
 ## ✨ What you get
 
@@ -40,10 +40,10 @@ Each distro needs a specific base install before running the installer:
 ## 🎛️ Make it yours
 
 ```bash
-./install.sh                # interactive: GPU, steps, package customization
+./install.sh                # interactive: steps and package customization
 ./install.sh 20 30 55       # run specific steps only
 ./install.sh --list         # list the detected distro's steps
-./install.sh --gpu amd 20   # force a GPU vendor for this run
+./install.sh --gpu amd 20   # override automatic GPU detection for this run
 ```
 
 ## ⚠️ Fresh installs only

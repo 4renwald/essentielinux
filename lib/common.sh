@@ -33,6 +33,8 @@ valid_gpu_vendor() {
   esac
 }
 
+readonly NVIDIA_NOOPEN_PCI_IDS_FILE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/data/nvidia-noopen-pciids.txt"
+
 # Print the GPU vendors physically present, one per line. Empty on VMs.
 gpu_hardware_vendors() {
   command -v lspci >/dev/null 2>&1 || return 0
@@ -43,28 +45,67 @@ gpu_hardware_vendors() {
       1002) echo amd ;;
       8086) echo intel ;;
     esac
-  done < <(lspci -nmm -d ::0300,::0302,::0380 2>/dev/null | awk -F'"' '{print $2}' | sort -u)
+  done < <(
+    lspci -n 2>/dev/null \
+      | awk '$2 ~ /^03/ { split(tolower($3), id, ":"); print id[1] }' \
+      | sort -u
+  )
 }
 
-# Resolve the effective GPU vendor from WORKSTATION_GPU or single-GPU
-# auto-detection. Interactive mode exports its choice to each module it runs.
-# Returns 1 when nothing can be resolved.
-gpu_vendor() {
+# Resolve the driver stacks to install. By default every detected display
+# vendor is included, which covers hybrid Intel/AMD + NVIDIA laptops. The
+# optional override is only for exceptional setups and testing.
+gpu_driver_vendors() {
   local forced="${WORKSTATION_GPU:-}"
   if [[ -n ${forced} ]]; then
     if valid_gpu_vendor "${forced}"; then
-      printf '%s\n' "${forced}"
+      [[ ${forced} == none ]] || printf '%s\n' "${forced}"
       return 0
     fi
     die "Invalid WORKSTATION_GPU '${forced}'. Use nvidia, amd, intel, or none."
   fi
-  local -a hardware=()
-  mapfile -t hardware < <(gpu_hardware_vendors)
-  if ((${#hardware[@]} == 1)); then
-    printf '%s\n' "${hardware[0]}"
-    return 0
-  fi
-  return 1
+  gpu_hardware_vendors
+}
+
+# List the PCI IDs of NVIDIA display controllers, not their audio functions.
+nvidia_display_pci_ids() {
+  require_command lspci
+  lspci -n 2>/dev/null \
+    | awk '$2 ~ /^03/ && tolower($3) ~ /^10de:/ { print tolower($3) }' \
+    | sort -u
+}
+
+# NVIDIA's open kernel modules need Turing or newer. The PCI-ID list comes
+# from RPM Fusion's maintained NVIDIA package data, the same data its normal
+# akmod package uses for this decision. IDs older than Turing but absent from
+# that current-driver list need a historical driver branch, so report them as
+# unsupported instead of guessing. Return proprietary if any detected NVIDIA
+# display controller needs the closed module, open for Turing or newer, or
+# unsupported when only a historical driver branch may work.
+nvidia_kernel_module_flavor_for_ids() {
+  (($# > 0)) || return 1
+  [[ -r ${NVIDIA_NOOPEN_PCI_IDS_FILE} ]] \
+    || die "Missing NVIDIA PCI-ID data: ${NVIDIA_NOOPEN_PCI_IDS_FILE}"
+  local id device
+  for id in "$@"; do
+    if grep -Fxiq -- "${id}" "${NVIDIA_NOOPEN_PCI_IDS_FILE}"; then
+      printf '%s\n' proprietary
+      return 0
+    fi
+    device=${id#*:}
+    if [[ ${device} =~ ^[[:xdigit:]]{4}$ ]] && ((16#${device} < 0x1e00)); then
+      printf '%s\n' unsupported
+      return 0
+    fi
+  done
+  printf '%s\n' open
+}
+
+nvidia_kernel_module_flavor() {
+  local -a ids=()
+  mapfile -t ids < <(nvidia_display_pci_ids)
+  ((${#ids[@]} > 0)) || return 1
+  nvidia_kernel_module_flavor_for_ids "${ids[@]}"
 }
 
 # Elevation ----------------------------------------------------------------------

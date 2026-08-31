@@ -14,14 +14,6 @@ if [[ -n ${WORKSTATION_ENGINE_LOADED:-} ]]; then
 fi
 readonly WORKSTATION_ENGINE_LOADED=1
 
-readonly GPU_LABELS=(
-  'NVIDIA'
-  'AMD'
-  'Intel'
-  'None (VM or headless)'
-)
-readonly GPU_VALUES=(nvidia amd intel none)
-
 # Steps that failed during this run; install.sh turns this into a non-zero
 # exit and a summary instead of reporting success over a partial setup.
 declare -a FAILED_MODULES=()
@@ -187,46 +179,7 @@ browse_manifests() {
   done
 }
 
-# ── Interactive pickers ──────────────────────────────────────────────────────
-
-pick_gpu_interactively() {
-  local default=0 vendor hardware_display=''
-  local -a hardware=()
-  mapfile -t hardware < <(gpu_hardware_vendors)
-  if ((${#hardware[@]} == 1)); then
-    case ${hardware[0]} in
-      nvidia) default=0 ;;
-      amd) default=1 ;;
-      intel) default=2 ;;
-    esac
-    hardware_display=" · ${C_GREEN}detected${C_RESET}"
-  elif ((${#hardware[@]} > 1)); then
-    hardware_display=" · ${C_YELLOW}multiple detected: ${hardware[*]}${C_RESET}"
-  fi
-
-  local -a rows=()
-  local value
-  for ((value = 0; value < ${#GPU_VALUES[@]}; value++)); do
-    rows+=("${GPU_LABELS[value]}")
-  done
-
-  menu_require_tty
-  menu_hide_cursor
-  trap menu_interrupted INT
-  local choice rc=0
-  choice="$(menu_select_one \
-    "🎨  Which GPU drives this machine?${hardware_display}" \
-    '↑/↓ move · enter confirm · q quit' \
-    "${default}" \
-    "${rows[@]}")" || rc=$?
-  ((rc == 2)) && menu_interrupted
-  menu_show_cursor
-  trap - INT
-
-  vendor=${GPU_VALUES[choice]}
-  export WORKSTATION_GPU=${vendor}
-  log_info "GPU vendor selected for this setup run: ${vendor}."
-}
+# ── Interactive picker ────────────────────────────────────────────────────────
 
 pick_modules_interactively() {
   local -a rows=() required=()

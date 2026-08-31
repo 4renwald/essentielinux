@@ -1,7 +1,9 @@
-# NVIDIA open kernel module driver for Turing-or-newer GPUs. The `*` entries
-# are the driver itself; the rest is support userspace.
+# RPM Fusion's standard akmod chooses the correct NVIDIA kernel module from
+# the detected PCI ID: proprietary for supported pre-Turing GPUs and open for
+# Turing or newer. The `*` entries are the driver itself; the rest is support
+# userspace.
 *kernel-devel-matched :: kernel headers for akmod builds
-*akmod-nvidia-open :: NVIDIA open kernel module
+*akmod-nvidia :: NVIDIA kernel module, selected automatically by RPM Fusion
 *xorg-x11-drv-nvidia :: NVIDIA userspace driver
 xorg-x11-drv-nvidia-libs.i686 :: 32-bit NVIDIA libraries for games
 xorg-x11-drv-nvidia-cuda :: CUDA/NVENC libraries and nvidia-smi

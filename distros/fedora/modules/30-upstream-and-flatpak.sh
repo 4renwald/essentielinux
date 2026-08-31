@@ -74,9 +74,10 @@ fi
 if feature_enabled hyprmod; then
   log_step 'Installing hyprmod (GTK4 settings app for Hyprland)'
   # hyprmod is a PyGObject application and pycairo ships no Linux wheels, so
-  # building its venv with uv or pipx alone would compile C extensions. The
-  # venv instead reuses Fedora's own python3-gobject and python3-cairo.
-  as_root dnf -y install pipx python3-gobject
+  # the venv build needs the cairo/introspection headers; gi itself comes from
+  # Fedora's python3-gobject through the system-site-packages venv.
+  as_root dnf -y install pipx python3-gobject python3-devel \
+    cairo-devel cairo-gobject-devel gobject-introspection-devel
   pipx install --force --system-site-packages \
     git+https://github.com/BlueManCZ/hyprmod.git
   "${HOME}/.local/bin/hyprmod" --install

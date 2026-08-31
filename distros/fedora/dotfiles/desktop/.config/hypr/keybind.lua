@@ -20,6 +20,7 @@ end
 bind("SUPER + SUPER_L", ipc .. "panel-toggle launcher", "Open launcher", { release = true })
 bind("SUPER + N", ipc .. "panel-toggle control-center", "Toggle shell sidebar")
 bind("SUPER + B", ipc .. "bar-toggle", "Show or hide shell panels")
+bind("SUPER + Comma", ipc .. "settings-toggle", "Open Noctalia settings")
 bind("SUPER + K", bin .. "hypr-keybinds", "Show this keybind cheatsheet")
 bind("CTRL + ALT + Delete", ipc .. "panel-toggle session", "Open shell session menu")
 bind("CTRL + ALT + C", ipc .. "notification-clear-active && " .. ipc .. "notification-clear-history", "Clear shell notifications")
@@ -92,8 +93,8 @@ native_bind("ALT + SHIFT + Tab", hl.dsp.window.cycle_next({ next = false }), "Pr
 native_bind("CTRL + ALT + Tab", hl.dsp.group.next(), "Next window in group")
 native_bind("CTRL + ALT + SHIFT + Tab", hl.dsp.group.prev(), "Previous window in group")
 native_bind("SUPER + U", hl.dsp.window.move({ out_of_group = true }), "Move window out of group")
-native_bind("SUPER + Comma", hl.dsp.group.toggle(), "Toggle group")
-native_bind("SUPER + SHIFT + Comma", hl.dsp.group.lock_active(), "Lock active group")
+native_bind("SUPER + G", hl.dsp.group.toggle(), "Toggle group")
+native_bind("SUPER + SHIFT + G", hl.dsp.group.lock_active(), "Lock active group")
 
 -- Special workspaces.
 hl.bind("SUPER + S", input.toggle_active_special, { description = "Toggle special workspace" })

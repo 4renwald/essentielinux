@@ -1,6 +1,12 @@
+# Ghostty is the terminal the Hyprland keybindings launch. No colours and no
+# opacity here: Noctalia owns the palette — this line makes ghostty read the
+# theme file Noctalia regenerates from the active wallpaper palette
+# (~/.config/ghostty/themes/noctalia).
+#
+# Managed by workstation; reapply with ./install.sh 50.
 font-family = JetBrainsMono Nerd Font
 font-size = 12
 window-padding-x = 25
 window-padding-y = 25
-background-opacity = 0.78
 cursor-style = bar
+theme = noctalia

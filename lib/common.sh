@@ -12,11 +12,11 @@ else
   readonly C_RESET='' C_BOLD='' C_DIM='' C_CYAN='' C_GREEN='' C_YELLOW='' C_RED='' C_MAGENTA=''
 fi
 
-log_step() { printf '\n%s🪩%s %s\n' "${C_CYAN}" "${C_RESET}" "${C_BOLD}$*${C_RESET}"; }
-log_success() { printf '%s  ✅  %s%s\n' "${C_GREEN}" "$*${C_RESET}"; }
-log_info() { printf '%s  💬  %s%s\n' "${C_DIM}" "$*${C_RESET}"; }
-log_warn() { printf '%s  ⚠️   %s%s\n' "${C_YELLOW}" "$*${C_RESET}" >&2; }
-log_error() { printf '%s  ❌  %s%s\n' "${C_RED}" "$*${C_RESET}" >&2; }
+log_step() { printf '\n%s[*]%s %s%s\n' "${C_CYAN}" "${C_RESET}" "${C_BOLD}" "$*${C_RESET}"; }
+log_success() { printf '%s[+]%s %s\n' "${C_GREEN}" "${C_RESET}" "$*"; }
+log_info() { printf '%s[i]%s %s\n' "${C_DIM}" "${C_RESET}" "$*"; }
+log_warn() { printf '%s[!]%s %s\n' "${C_YELLOW}" "${C_RESET}" "$*" >&2; }
+log_error() { printf '%s[x]%s %s\n' "${C_RED}" "${C_RESET}" "$*" >&2; }
 die() { log_error "$*"; exit 1; }
 
 require_command() {

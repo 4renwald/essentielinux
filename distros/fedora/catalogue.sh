@@ -2,7 +2,7 @@
 # Fedora catalogue: everything the engine needs to know about this distro.
 # Sourced by install.sh after DISTRO_ID/DISTRO_ROOT are resolved.
 
-DISTRO_INFO='Fedora · Hyprland · Noctalia'
+DISTRO_INFO='Fedora - Hyprland - Noctalia'
 
 MODULE_IDS=(00 10 20 25 26 27 30 35 40 50 55 60)
 MODULE_NAMES=(

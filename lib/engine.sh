@@ -42,9 +42,9 @@ run_module() {
   file="$(find "${DISTRO_ROOT}/modules" -maxdepth 1 -type f -name "${id}-*.sh" -print -quit)"
   [[ -n ${file} ]] || die "No module starts with ${id}."
   name=${MODULE_NAMES[index]}
-  printf '\n%s╭──── %s  %s%s\n' "${C_CYAN}" "${id}" "${name}" "${C_RESET}"
+  printf '\n%s[*] %s  %s%s\n' "${C_CYAN}" "${id}" "${name}" "${C_RESET}"
   if bash "${file}"; then
-    printf '%s╰──── %s  %s%s\n' "${C_DIM}" "${id}" "${name}" "${C_RESET}"
+    printf '%s[+] %s  %s%s\n' "${C_DIM}" "${id}" "${name}" "${C_RESET}"
     return 0
   else
     # An if without an else reports 0 when its condition fails, so the real
@@ -71,7 +71,7 @@ customize_manifest() {
   for ((index = 0; index < ${#PACKAGES[@]}; index++)); do
     row="$(printf '%-*s' "${width}" "${PACKAGES[index]}")"
     [[ -n ${PACKAGE_DESCRIPTIONS[index]} ]] && row+="  ${PACKAGE_DESCRIPTIONS[index]}"
-    ((PACKAGE_REQUIRED[index])) && row+="   · required"
+    ((PACKAGE_REQUIRED[index])) && row+="   - required"
     rows+=("${row}")
     if selection_is_skipped "${manifest}" "${PACKAGES[index]}"; then
       checked+=(0)
@@ -83,8 +83,8 @@ customize_manifest() {
 
   local MENU_ON_QUIT=back rc=0
   menu_select_many \
-    "📦  ${label}: pick packages" \
-    'space toggle · a all/none · r reset · enter apply · q cancel' \
+    "[*]  ${label}: pick packages" \
+    'space toggle - a all/none - r reset - enter apply - q cancel' \
     checked required "${rows[@]}" || rc=$?
 
   if ((rc == 0)); then
@@ -116,14 +116,14 @@ customize_step() {
 
   local index rc=0 choice group_highlight
   while true; do
-    local -a group_rows=('← Back')
+    local -a group_rows=('<- Back')
     for ((index = 0; index < ${#MANIFESTS[@]}; index++)); do
       group_rows+=("${MANIFEST_LABELS[${MANIFESTS[index]}]:-${MANIFESTS[index]}}")
     done
     rc=0
     choice="$(menu_select_one \
-      "🧩  Step ${id}: choose a group" \
-      '↑/↓ move · enter open · q back' \
+      "[*]  Step ${id}: choose a group" \
+      'up/down move - enter open - q back' \
       1 \
       "${group_rows[@]}")" || rc=$?
     group_highlight=${MENU_HIGHLIGHT}
@@ -168,8 +168,8 @@ browse_manifests() {
     done
     rc=0
     choice="$(menu_select_one \
-      '📦  Package groups: pick one to customize' \
-      '↑/↓ move · enter open · q back' \
+      '[*]  Package groups: pick one to customize' \
+      'up/down move - enter open - q back' \
       1 \
       "${rows[@]}")" || rc=$?
     group_highlight=${MENU_HIGHLIGHT}
@@ -192,7 +192,7 @@ pick_modules_interactively() {
   # browser instead of running anything. Required-marked so space/all cannot
   # toggle it, and unchecked so the selected count stays honest.
   customize_index=${#rows[@]}
-  rows+=('📦  Customize packages: pick per group')
+  rows+=('[*]  Customize packages: pick per group')
   required+=(1)
 
   PICK_CHECKED=()
@@ -208,8 +208,8 @@ pick_modules_interactively() {
   while true; do
     rc=0
     menu_select_many \
-      '🧩  Which steps should run on this machine?' \
-      '↑/↓ move · space toggle · c customize step · enter run · q quit' \
+      '[*]  Which steps should run on this machine?' \
+      'up/down move - space toggle - c customize step - enter run - q quit' \
       PICK_CHECKED required "${rows[@]}" || rc=$?
     picker_highlight=${MENU_HIGHLIGHT}
     if ((rc == 3)); then

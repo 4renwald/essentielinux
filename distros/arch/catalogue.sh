@@ -2,7 +2,7 @@
 # Arch catalogue: everything the engine needs to know about this distro.
 # Sourced by install.sh after DISTRO_ID/DISTRO_ROOT are resolved.
 
-DISTRO_INFO='Arch · Hyprland · Caelestia'
+DISTRO_INFO='Arch - Hyprland - Caelestia'
 
 MODULE_IDS=(00 10 20 25 30 35 40 45 50 52 55)
 MODULE_NAMES=(

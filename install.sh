@@ -65,7 +65,7 @@ EOF
 
 list_modules() {
   local index
-  printf '🧭 %s modules:\n' "${DISTRO_ID}"
+  printf '[i] %s modules:\n' "${DISTRO_ID}"
   for ((index = 0; index < ${#MODULE_IDS[@]}; index++)); do
     printf '  %s\n' "$(module_row "${index}")"
   done
@@ -117,7 +117,7 @@ else
   SELECTED=("${args[@]}")
 fi
 
-printf '\n%s🚀%s %s setup: %s\n\n' "${C_CYAN}" "${C_RESET}" "${DISTRO_ID}" "${C_BOLD}${SELECTED[*]}${C_RESET}"
+printf '\n%s[*]%s %s setup: %s\n\n' "${C_CYAN}" "${C_RESET}" "${DISTRO_ID}" "${C_BOLD}${SELECTED[*]}${C_RESET}"
 
 # Elevate only if one of the selected steps is privileged.
 needs_root=0
@@ -143,7 +143,7 @@ if ((${#FAILED_MODULES[@]} > 0)); then
   exit 1
 fi
 
-log_success "✨ ${DISTRO_ID} setup completed: ${SELECTED[*]}."
+log_success "${DISTRO_ID} setup completed: ${SELECTED[*]}."
 # Each distro may define distro_final_notes in its catalogue.
 if declare -F distro_final_notes >/dev/null 2>&1; then
   distro_final_notes

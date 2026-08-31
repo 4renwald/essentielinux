@@ -26,7 +26,7 @@ menu_show_cursor() { printf '\e[?25h' >&2; }
 
 menu_interrupted() {
   menu_show_cursor
-  printf '\n%s  ⏹  Setup cancelled.%s\n' "${C_YELLOW}" "${C_RESET}" >&2
+  printf '\n%s[!]%s Setup cancelled.\n' "${C_YELLOW}" "${C_RESET}" >&2
   exit 130
 }
 
@@ -37,9 +37,9 @@ menu_require_tty() {
 # Print the header: a bold title line over a dim one-line distro summary.
 menu_banner() {
   local distro_info=$1
-  printf '\n%s🪩 essentielinux%s\n' "${C_BOLD}${C_MAGENTA}" "${C_RESET}" >&2
-  printf '%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n' "${C_CYAN}" "${C_RESET}" >&2
-  printf '%s ✦  %s%s\n' "${C_DIM}" "${distro_info}" "${C_RESET}" >&2
+  printf '\n%s[*] essentielinux%s\n' "${C_BOLD}${C_MAGENTA}" "${C_RESET}" >&2
+  printf '%s--------------------------------------%s\n' "${C_CYAN}" "${C_RESET}" >&2
+  printf '%s -  %s%s\n' "${C_DIM}" "${distro_info}" "${C_RESET}" >&2
   printf '\n' >&2
 }
 
@@ -65,7 +65,7 @@ _menu_render() {
     fi
     prefix=' '
     if ((row == highlight)); then
-      prefix="${C_BOLD}${C_CYAN}❯${C_RESET}"
+      prefix="${C_BOLD}${C_CYAN}>${C_RESET}"
       printf ' %s %s %s%s%s\n' >&2 "${prefix}" "${marker}" "${C_BOLD}${C_CYAN}" "${list[row]}${C_RESET}"
     else
       printf ' %s %s %s\n' >&2 "${prefix}" "${marker}" "${list[row]}"

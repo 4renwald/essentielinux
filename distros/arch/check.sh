@@ -331,23 +331,23 @@ else
   fail "Caelestia wallpaper repository is missing or has the wrong origin at ${wallpaper_dir}. Run ./install.sh 45."
 fi
 
-# Module 45 prunes these category folders after cloning. A manual `git pull`
-# inside the clone would bring deleted-but-unmodified folders straight back,
-# since git has no record that they were ever removed on purpose here.
-wallpaper_pruned_categories=(
-  cold manga wave boccha solarized poly girl monochrome cherry apocalypse
-  jackb aerial flowers geometry halloween fogsmoke industrial lightbulb logo
-  paper basalt decay fauna weirdcore architecture retro interior
+# Module 45 sparse-clones dharmx/walls and cherry-picks only these category
+# folders, so the rest of the upstream repository is never fetched. The
+# sparse-checkout selection is reapplied on every run of module 45.
+wallpaper_kept_categories=(
+  abstract animated anime apeiros calm centered chillop devicons digital
+  dreamcore evangelion gruvbox m-26.jp minimal mountain nature nord outrun
+  painting pixel radium spam stalenhag tile unsorted
 )
-wallpaper_categories_reappeared=()
-for wallpaper_category in "${wallpaper_pruned_categories[@]}"; do
-  [[ ! -d ${wallpaper_dir}/${wallpaper_category} ]] \
-    || wallpaper_categories_reappeared+=("${wallpaper_category}")
+wallpaper_missing_categories=()
+for wallpaper_category in "${wallpaper_kept_categories[@]}"; do
+  [[ -d ${wallpaper_dir}/${wallpaper_category} ]] \
+    || wallpaper_missing_categories+=("${wallpaper_category}")
 done
-if [[ -d ${wallpaper_dir} && ${#wallpaper_categories_reappeared[@]} -gt 0 ]]; then
-  fail "Pruned wallpaper categories are back: ${wallpaper_categories_reappeared[*]}. Run ./install.sh 45."
+if [[ -d ${wallpaper_dir} && ${#wallpaper_missing_categories[@]} -gt 0 ]]; then
+  fail "Sparse checkout is missing wallpaper categories: ${wallpaper_missing_categories[*]}. Run ./install.sh 45."
 elif [[ -d ${wallpaper_dir} ]]; then
-  pass "No pruned wallpaper categories are present."
+  pass "Every kept wallpaper category is checked out at ${wallpaper_dir}."
 fi
 
 state_home="${XDG_STATE_HOME:-${HOME}/.local/state}"

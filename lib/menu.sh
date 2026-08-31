@@ -34,14 +34,16 @@ menu_require_tty() {
   [[ -t 0 ]] || die 'Interactive menus need a terminal. Run module ids directly, e.g. ./install.sh 20 30.'
 }
 
-# Print the banner: the repository name in box-drawing letterforms, shaded by
+# Print the banner: the repository name in block letterforms, shaded by
 # alternating bold and regular cyan, over a dim one-line distro summary.
 menu_banner() {
   local distro_info=$1
   local -a art=(
-    '┌─┐┌─┐ ┌─┐ ┌─┐ ┌┬┐ ┌─┐ ┌┬┐ ┌─┐ ┌┬┐ ┌┐ ┌─┐ ┌─┐'
-    '│ ││ │ │ │ ├┤  ├┴┤ └─┐  │  ├─┤  │   │ │ │ │ │'
-    '└─┘└─┘ └─┘ ┴   ┴ ┴ └─┘  ┴  ┴ ┴  ┴  ─┘ └─┘ ┴ ┴'
+    '                                                              ▄▄                ▄▄             ▄▄'
+    ' ██             ▀▀  ██             ██ ▀▀'
+    '▀██▀ ▀▀█▄ ▄████ ██  ██ ▄█▀█▄       ██ ██  ████▄ ██ ██ ██ ██'
+    ' ██ ▄█▀██ ██    ██  ██ ██▄█▀ ▀▀▀▀▀ ██ ██  ██ ██ ██ ██  ███'
+    ' ██ ▀█▄██ ▀████ ██▄ ██ ▀█▄▄▄       ██ ██▄ ██ ██ ▀██▀█ ██ ██'
   )
   local line index
   printf '\n' >&2

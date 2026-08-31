@@ -21,14 +21,22 @@ readonly HYPR_CONFIG_DIR="${HOME}/.config/hypr"
 readonly FISH_CONFIG="${HOME}/.config/fish/config.fish"
 readonly WALLPAPER_REPOSITORY='https://github.com/dharmx/walls.git'
 readonly WALLPAPER_DIR="${HOME}/Pictures/Wallpapers"
-# Category folders pruned from dharmx/walls after cloning: a subjective trim
-# of styles that do not fit this desktop. check.sh fails if any of these
-# reappear, so a manual `git pull` inside the clone cannot silently undo it.
-readonly -a WALLPAPER_PRUNED_CATEGORIES=(
-  cold manga wave boccha solarized poly girl monochrome cherry apocalypse
-  jackb aerial flowers geometry halloween fogsmoke industrial lightbulb logo
-  paper basalt decay fauna weirdcore architecture retro interior
+
+# The categories you actually keep. Only these are downloaded — the rest of
+# the upstream repository is never fetched, so the checkout stays small.
+readonly -a WALLPAPER_KEPT_CATEGORIES=(
+  abstract animated anime apeiros calm centered chillop devicons digital
+  dreamcore evangelion gruvbox m-26.jp minimal mountain nature nord outrun
+  painting pixel radium spam stalenhag tile unsorted
 )
+
+# A private or missing repository must fail loudly instead of sitting at a
+# credential prompt in the middle of the setup. GIT_TERMINAL_PROMPT only
+# disables terminal prompts: an askpass helper (SSH_ASKPASS or a desktop
+# agent picked up through GIT_ASKPASS) would still ask, so point that at
+# /bin/true as well; git then gets an empty username and aborts.
+export GIT_TERMINAL_PROMPT=0
+export GIT_ASKPASS=/bin/true
 # Caelestia ships no per-terminal colour files. Its shell writes the active
 # scheme to this file as escape sequences, and its fish config replays them at
 # every interactive start, which is what themes the terminal.
@@ -153,38 +161,35 @@ wallpaper_repository_matches() {
   [[ ${origin_url%.git} == ${WALLPAPER_REPOSITORY%.git} ]]
 }
 
-prune_wallpaper_categories() {
-  local category target
-
-  for category in "${WALLPAPER_PRUNED_CATEGORIES[@]}"; do
-    target="${WALLPAPER_DIR}/${category}"
-    [[ -d ${target} ]] || continue
-    if path_has_symlink "${target}"; then
-      log_warn "Not pruning ${target}: it is reached through a symlink."
-      continue
-    fi
-    rm -rf -- "${target}"
-  done
+apply_wallpaper_selection() {
+  ((${#WALLPAPER_KEPT_CATEGORIES[@]} > 0)) \
+    || die 'The wallpaper keep list is empty; nothing to select.'
+  git -C "${WALLPAPER_DIR}" sparse-checkout set "${WALLPAPER_KEPT_CATEGORIES[@]}"
 }
 
 install_wallpaper_repository() {
-  if [[ -e ${WALLPAPER_DIR} || -L ${WALLPAPER_DIR} ]]; then
-    if [[ -d ${WALLPAPER_DIR}/.git ]] && wallpaper_repository_matches; then
-      prune_wallpaper_categories
-      log_success "Wallpaper repository is already available at ${WALLPAPER_DIR}."
-      return
+  if [[ -d ${WALLPAPER_DIR}/.git ]]; then
+    if wallpaper_repository_matches; then
+      git -C "${WALLPAPER_DIR}" pull --ff-only
+      apply_wallpaper_selection
+      log_success "Wallpapers updated at ${WALLPAPER_DIR}."
+    else
+      log_warn "${WALLPAPER_DIR} is a different repository; leaving it untouched."
     fi
-    die "Refusing to replace ${WALLPAPER_DIR}; move it aside, then rerun ./install.sh 45."
-  fi
+  elif [[ -e ${WALLPAPER_DIR} || -L ${WALLPAPER_DIR} ]]; then
+    log_warn "${WALLPAPER_DIR} already exists and is not a Git checkout; leaving it untouched."
+  else
+    if path_has_symlink "${HOME}/Pictures"; then
+      die "Refusing to clone wallpapers through a symlinked directory: ${HOME}/Pictures"
+    fi
 
-  if path_has_symlink "${HOME}/Pictures"; then
-    die "Refusing to clone wallpapers through a symlinked directory: ${HOME}/Pictures"
+    log_step "Cloning wallpapers for Caelestia"
+    install -d "${HOME}/Pictures"
+    git clone --depth 1 --filter=blob:none --sparse \
+      "${WALLPAPER_REPOSITORY}" "${WALLPAPER_DIR}"
+    apply_wallpaper_selection
+    log_success "Wallpapers cloned to ${WALLPAPER_DIR}."
   fi
-
-  log_step "Cloning wallpapers for Caelestia"
-  install -d "${HOME}/Pictures"
-  git clone "${WALLPAPER_REPOSITORY}" "${WALLPAPER_DIR}"
-  prune_wallpaper_categories
 }
 
 # Apply the local startup guard before unrelated wallpaper validation so an

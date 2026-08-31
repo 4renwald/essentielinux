@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly REPO_URL="https://github.com/4renwald/linux-workstation.git"
-readonly TARGET_DIR="${WORKSTATION_DIR:-${HOME}/linux-workstation}"
+readonly REPO_URL="https://github.com/4renwald/facile-linux.git"
+readonly TARGET_DIR="${WORKSTATION_DIR:-${HOME}/facile-linux}"
 
 if [[ ${EUID} -eq 0 ]]; then
   printf 'Error: run this script as your regular user, without sudo.\n' >&2

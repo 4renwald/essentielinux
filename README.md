@@ -1,9 +1,11 @@
-# linux-workstation
+# facile-linux
 
 ```text
-┌─┐┌─┐ ┌─┐ ┌─┐ ┌┬┐ ┌─┐ ┌┬┐ ┌─┐ ┌┬┐ ┌┐ ┌─┐ ┌─┐
-│ ││ │ │ │ ├┤  ├┴┤ └─┐  │  ├─┤  │   │ │ │ │ │
-└─┘└─┘ └─┘ ┴   ┴ ┴ └─┘  ┴  ┴ ┴  ┴  ─┘ └─┘ ┴ ┴
+                                                              ▄▄                ▄▄             ▄▄
+ ██             ▀▀  ██             ██ ▀▀
+▀██▀ ▀▀█▄ ▄████ ██  ██ ▄█▀█▄       ██ ██  ████▄ ██ ██ ██ ██
+ ██ ▄█▀██ ██    ██  ██ ██▄█▀ ▀▀▀▀▀ ██ ██  ██ ██ ██ ██  ███
+ ██ ▀█▄██ ▀████ ██▄ ██ ▀█▄▄▄       ██ ██▄ ██ ██ ▀██▀█ ██ ██
 
  ◆  Fedora · Hyprland · Noctalia
  ◆  Arch · Hyprland · Caelestia
@@ -18,16 +20,16 @@ The two distros never share a config file. Everything distro-specific lives unde
 On a fresh machine (no cloning needed):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/4renwald/linux-workstation/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/4renwald/facile-linux/main/bootstrap.sh | bash
 ```
 
-The bootstrap installs `git` through the detected distro's package manager, clones the repository to `~/linux-workstation`, and starts the interactive installer.
+The bootstrap installs `git` through the detected distro's package manager, clones the repository to `~/facile-linux`, and starts the interactive installer.
 
 Prefer doing it by hand:
 
 ```bash
-git clone https://github.com/4renwald/linux-workstation.git
-cd linux-workstation
+git clone https://github.com/4renwald/facile-linux.git
+cd facile-linux
 ./install.sh
 reboot
 ```
@@ -78,7 +80,7 @@ Choices are stored per machine as small *deselected* lists under `~/.local/state
 | 26 | Gaming | Steam, GameMode, MangoHud, GOverlay, Gamescope, NTSYNC, Wine |
 | 27 | Printing | CUPS, HPLIP, Gutenprint |
 | 30 | Upstream & Flatpak | Upstream CLIs, fonts, cursor, mpv shader pack, vendor RPMs, Flathub apps |
-| 35 | Wallpapers | Clones the wallpaper collection to `~/Pictures/Wallpapers` |
+| 35 | Wallpapers | Sparse-clones the kept categories of `dharmx/walls` to `~/Pictures/Wallpapers` |
 | 40 | System | zram, VM tunables, services, Snapper, Fish login shell |
 | 50 | Dotfiles | Hyprland, Noctalia, Ghostty, terminal, Thunar, GTK configuration |
 | 55 | Video pipeline | mpv shader link, ff2mpv host, Zen decoding preferences |

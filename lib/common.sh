@@ -168,7 +168,9 @@ as_root() {
       sudo -n true 2>/dev/null \
         || { log_warn 'sudo authorization expired; one more password prompt.'; sudo -v; }
       sudo -n -- "$@"
-      return 0
+      # Propagate the command's own status: callers branch on `if as_root test`
+      # and a forced 0 would skip existence checks (and the Bibata install).
+      return
       ;;
   esac
   # Lazy resolution for module runs that skip the installer preamble.

@@ -149,6 +149,19 @@ if feature_enabled ff2mpv; then
   log_success "Installed ff2mpv-rust to ${HOME}/.local/bin."
 fi
 
+if feature_enabled ventoy; then
+  log_step 'Installing Ventoy from its official Linux release'
+  ventoy_url="$(github_asset_url ventoy/Ventoy '^ventoy-[0-9.]+-linux[.]tar[.]gz$')" \
+    || die 'Unable to find the official Ventoy Linux release.'
+  ventoy_dir="${XDG_DATA_HOME:-${HOME}/.local/share}/ventoy"
+  install -d "${ventoy_dir}"
+  download "${ventoy_url}" "${WORK_DIR}/ventoy.tar.gz"
+  tar -xzf "${WORK_DIR}/ventoy.tar.gz" --strip-components=1 -C "${ventoy_dir}"
+  [[ -x ${ventoy_dir}/VentoyGUI.x86_64 ]] \
+    || die 'The Ventoy release did not contain its x86_64 GUI.'
+  log_success "Installed Ventoy to ${ventoy_dir}."
+fi
+
 if feature_enabled flatpaks; then
   log_step 'Installing the approved Flathub applications'
   read_manifest "${DISTRO_ROOT}/packages/flatpaks.txt"

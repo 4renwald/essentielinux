@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly ventoy_dir="${XDG_DATA_HOME:-${HOME}/.local/share}/ventoy"
+readonly ventoy_gui="${ventoy_dir}/VentoyGUI.x86_64"
+
+if [[ ! -x ${ventoy_gui} ]]; then
+  printf 'Ventoy is not installed. Enable the Ventoy feature in the upstream tools step.\n' >&2
+  exit 1
+fi
+
+exec "${ventoy_gui}" "$@"

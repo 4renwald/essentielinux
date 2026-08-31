@@ -6,6 +6,7 @@ claude-code :: Claude Code CLI
 opencode-desktop-bin :: graphical OpenCode client, alongside the opencode CLI
 bibata-cursor-theme-bin :: Bibata Modern Classic cursor
 helium-browser-bin :: secondary Chromium-based browser with VA-API flags
+ventoy-bin :: create multiboot USB drives from Ventoy's official release
 spotify :: Spotify client
 spicetify-cli :: Spicetify CLI
 keeper-password-manager :: Keeper password manager

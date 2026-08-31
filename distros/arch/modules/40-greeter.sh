@@ -145,11 +145,5 @@ if [[ -L ${dm_link} ]]; then
 fi
 as_root systemctl enable greetd.service
 
-# greetd-tuigreet is what this repository used before sysc-greet. Leaving it
-# installed is harmless, but it is no longer referenced by anything.
-if pacman -Q greetd-tuigreet >/dev/null 2>&1; then
-  log_warn "greetd-tuigreet is still installed and no longer used. Remove it with: sudo pacman -Rns greetd-tuigreet"
-fi
-
 log_success "greetd will start sysc-greet after the next reboot."
 log_warn "Pick the Hyprland session in sysc-greet's session list; it reads /usr/share/wayland-sessions."

@@ -12,7 +12,7 @@ keeper-password-manager :: Keeper password manager
 zen-browser-bin :: Zen browser
 ff2mpv-rust :: native messaging host handing page URLs to mpv
 hyprmod :: GTK4 settings app for Hyprland (writes are treated as drift)
-protonup-qt-bin :: installs and updates Proton-GE into Steam's directory
+protonplus :: installs and updates compatibility tools into Steam's directory
 vkbasalt :: Vulkan post-processing used by GOverlay
 lib32-vkbasalt :: vkBasalt for 32-bit games
 qtengine :: Qt platform theme named by Caelestia's generated configuration

@@ -22,4 +22,4 @@ else
   log_warn 'No systemd user manager is reachable; audio services will activate at the next login.'
 fi
 
-log_success 'PipeWire, WirePlumber, EasyEffects, and Bluetooth audio codecs are configured.'
+log_success 'PipeWire, WirePlumber, and Bluetooth audio codecs are configured.'

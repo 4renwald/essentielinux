@@ -97,25 +97,6 @@ case ${gpu} in
       done
     fi
 
-    # nvidia-open-dkms conflicts with nvidia-open and with the NVIDIA-MODULE
-    # virtual package, so the prebuilt and DKMS implementations can never be
-    # installed together. pacman answers "no" to conflict prompts under
-    # --noconfirm, which would abort the run with an opaque dependency error.
-    # Detect the switch here and explain it instead.
-    declare -a stale_nvidia_modules=()
-    wanted_nvidia_set=" ${wanted_nvidia_modules[*]} "
-    while IFS= read -r installed_module; do
-      [[ -n ${installed_module} ]] || continue
-      if [[ ${wanted_nvidia_set} != *" ${installed_module} "* ]]; then
-        stale_nvidia_modules+=("${installed_module}")
-      fi
-    done < <(pacman -Qq nvidia-open nvidia-open-lts nvidia-open-dkms 2>/dev/null)
-
-    if [[ ${#stale_nvidia_modules[@]} -gt 0 ]]; then
-      die "Installed NVIDIA kernel module package(s) '${stale_nvidia_modules[*]}' do not match the set this kernel selection needs ('${wanted_nvidia_modules[*]}'). These implementations conflict and cannot be swapped unattended. Switch deliberately, then run this module again:
-    sudo pacman -S ${wanted_nvidia_modules[*]}"
-    fi
-
     for package in nvidia-utils lib32-nvidia-utils; do
       add_hardware_package "${package}"
     done

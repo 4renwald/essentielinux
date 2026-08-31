@@ -5,8 +5,6 @@
 *wireplumber :: PipeWire session manager
 rtkit :: realtime scheduling for audio
 pavucontrol :: volume control
-easyeffects :: per-app audio effects
-calf :: plugin suite for EasyEffects
 libldac :: LDAC Bluetooth codec
 libfreeaptx :: aptX Bluetooth codec
 fdk-aac :: AAC Bluetooth codec

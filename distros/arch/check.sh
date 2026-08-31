@@ -53,7 +53,7 @@ log_step "Essential commands"
 for command in paru Hyprland start-hyprland qs caelestia jq ghostty fuzzel zen-browser helium-browser gh glab wpctl grim slurp wl-copy cliphist lspci steam gamescope goverlay mangohud gamemoderun vulkaninfo vainfo zramctl \
   mpv yt-dlp \
   gammastep notify-send gnome-keyring-daemon trash-empty dconf xdg-settings man protontricks vm-curator qemu-system-x86_64 \
-  claude codex opencode opencode-desktop \
+  claude codex opencode opencode-desktop code \
   sysc-greet niri kitty; do
   check_command "${command}"
 done
@@ -160,14 +160,14 @@ done
 steam_data_dir="${steam_data_dir:-${XDG_DATA_HOME:-${HOME}/.local/share}/Steam}"
 compat_dir="${steam_data_dir}/compatibilitytools.d"
 proton_ge_dir="$(find "${compat_dir}" -maxdepth 1 -mindepth 1 -type d -name 'GE-Proton*' 2>/dev/null | sort -V | tail -n1)"
-# ProtonUp-Qt installs these on demand, so none being present is a state to
+# ProtonPlus installs these on demand, so none being present is a state to
 # report rather than an installation failure.
 if [[ -n ${proton_ge_dir} && -x ${proton_ge_dir}/proton ]]; then
   pass "Proton-GE available to Steam: ${proton_ge_dir##*/}"
 elif [[ -n ${proton_ge_dir} ]]; then
-  fail "${proton_ge_dir} has no runnable proton script. Remove it and add a build again with ProtonUp-Qt."
+  fail "${proton_ge_dir} has no runnable proton script. Remove it and add a build again with ProtonPlus."
 else
-  warn "No Proton build in ${compat_dir}. Open ProtonUp-Qt and add one."
+  warn "No Proton build in ${compat_dir}. Open ProtonPlus and add one."
 fi
 
 log_step "Caelestia packages"
@@ -223,20 +223,6 @@ for service in NetworkManager.service bluetooth.service accounts-daemon.service 
   paccache.timer reflector.timer fwupd-refresh.timer smartd.service; do
   check_enabled "${service}"
 done
-
-log_step "Editor keybinding"
-# No editor is declared in packages/. SUPER + C runs whatever hypr-vars.lua
-# names, and hl.exec_cmd failures are silent, so a missing binary would just
-# make the keybinding do nothing.
-editor_command="$(sed -nE 's/^[[:space:]]*editor[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' \
-  "${HOME}/.config/caelestia/hypr-vars.lua" 2>/dev/null | head -n1)"
-if [[ -z ${editor_command} ]]; then
-  warn "No editor is set in hypr-vars.lua; SUPER + C falls back to Caelestia's codium default, which is not installed."
-elif command -v "${editor_command}" >/dev/null 2>&1; then
-  pass "SUPER + C runs an installed editor: ${editor_command}"
-else
-  warn "SUPER + C runs '${editor_command}', which is not installed, so the keybinding does nothing. Install your editor or change hypr-vars.lua."
-fi
 
 log_step "Agent privilege prompts"
 check_command pkexec
@@ -636,11 +622,6 @@ if grep -qi nvidia <<< "${graphics_devices}"; then
     warn "NVreg_UseKernelSuspendNotifiers is not enabled. Arch sets it in /usr/lib/modprobe.d/nvidia-sleep.conf; check for a local override in /etc/modprobe.d."
   fi
 
-  for obsolete_service in nvidia-suspend.service nvidia-resume.service nvidia-hibernate.service nvidia-suspend-then-hibernate.service; do
-    if systemctl is-enabled --quiet "${obsolete_service}" 2>/dev/null; then
-      warn "${obsolete_service} is enabled. It belongs to the 430-590 drivers and is unnecessary on 595+ open modules; disable it."
-    fi
-  done
 fi
 
 check_package libva-utils

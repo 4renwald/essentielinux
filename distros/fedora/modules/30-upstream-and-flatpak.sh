@@ -192,12 +192,6 @@ if feature_enabled opencode-desktop; then
   as_root dnf -y install "${opencode_desktop_rpm}"
 fi
 
-if feature_enabled megasync; then
-  log_step 'Installing the official MEGAsync RPM for Fedora 44'
-  as_root dnf -y install \
-    'https://mega.nz/linux/repo/Fedora_44/x86_64/megasync-Fedora_44.x86_64.rpm'
-fi
-
 if feature_enabled proton-mail; then
   log_step 'Installing the official Proton Mail desktop RPM'
   as_root dnf -y install \

@@ -14,6 +14,5 @@ ff2mpv :: ff2mpv native messaging host for Zen
 chatgpt :: ChatGPT desktop RPM
 keeper :: Keeper password manager RPM
 opencode-desktop :: OpenCode desktop RPM
-megasync :: MEGAsync client RPM
 proton-mail :: Proton Mail desktop RPM
 vm-curator :: vm-curator RPM

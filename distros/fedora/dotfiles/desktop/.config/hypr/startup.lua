@@ -60,7 +60,6 @@ hl.on("hyprland.start", function()
         "gsettings set org.gnome.desktop.interface cursor-theme Bibata-Modern-Classic",
         "gsettings set org.gnome.desktop.interface cursor-size 24",
         "noctalia",
-        "sleep 3; easyeffects --gapplication-service",
     }
     for _, command in ipairs(commands) do hl.exec_cmd(command) end
 end)

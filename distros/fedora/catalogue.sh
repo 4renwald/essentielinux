@@ -4,11 +4,10 @@
 
 DISTRO_INFO='Fedora · Hyprland · Noctalia'
 
-MODULE_IDS=(00 10 15 20 25 26 27 30 35 40 50 55 60)
+MODULE_IDS=(00 10 20 25 26 27 30 35 40 50 55 60)
 MODULE_NAMES=(
   'Preflight'
   'Repositories'
-  'Minimal cleanup'
   'Base packages'
   'Audio'
   'Gaming'
@@ -23,9 +22,8 @@ MODULE_NAMES=(
 MODULE_HINTS=(
   'Verify Fedora, x86_64, and required tooling'
   'RPM Fusion, COPR, vendor repositories, and Flathub'
-  'Remove conflicting and superseded packages'
   'System update plus core, desktop, shell, apps, and the GPU driver'
-  'PipeWire, WirePlumber, EasyEffects, and Bluetooth codecs'
+  'PipeWire, WirePlumber, and Bluetooth codecs'
   'Steam, GameMode, MangoHud, Gamescope, NTSYNC, and Wine'
   'CUPS, HPLIP, and Gutenprint'
   'Upstream CLIs, fonts, cursor, vendor RPMs, and Flatpak apps'
@@ -37,7 +35,7 @@ MODULE_HINTS=(
 )
 
 # Steps that elevate; matches the privileged operations inside each module.
-ROOT_MODULES=(10 15 20 25 26 27 30 40 60)
+ROOT_MODULES=(10 20 25 26 27 30 40 60)
 
 declare -A MANIFEST_LABELS=(
   [core]='Core system'

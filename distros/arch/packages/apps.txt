@@ -2,6 +2,7 @@
 discord :: Discord chat
 github-cli :: GitHub CLI
 glab :: GitLab CLI
+code :: Code - OSS editor
 bluetui :: Bluetooth TUI for the bluez stack
 openai-codex :: Codex CLI
 opencode :: OpenCode CLI
@@ -13,3 +14,4 @@ obsidian :: Obsidian notes
 signal-desktop :: Signal messenger
 telegram-desktop :: Telegram client
 qemu-desktop :: QEMU with desktop VM modules; vm-curator drives it
+nextcloud-client :: Nextcloud desktop file-sync client

@@ -2,14 +2,11 @@
 -- Managed by workstation; reapply with ./install.sh 50.
 --
 -- Caelestia's upstream defaults point at codium, thunar and pwvucontrol.
--- thunar and pavucontrol are installed here; codium and pwvucontrol exist
--- solely in the AUR, so the mixer keybinding uses the official equivalent.
+-- The package manifest installs Code - OSS, Thunar, and pavucontrol, so these
+-- overrides use their available commands instead.
 --
--- No editor is installed by this repository: install whichever VS Code build
--- you want yourself. SUPER + C stays pointed at `code` because every such
--- build provides that binary, and the upstream default it would otherwise
--- fall back to (codium) is not installed either. hl.exec_cmd failures are
--- silent, so check.sh warns when nothing provides the editor.
+-- hl.exec_cmd failures are silent, so Code - OSS is included in the required
+-- package manifest and SUPER + C always has a concrete editor target.
 --
 -- sleepGestureCmd overrides Caelestia's suspend-then-hibernate default. This
 -- system swaps only to zram, which cannot be a hibernation target, so the

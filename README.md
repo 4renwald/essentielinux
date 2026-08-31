@@ -2,7 +2,7 @@
 
 > A fresh Linux install, dressed up and ready to dance.
 
-One installer for my Fedora and Arch machines. It detects the running distro, then applies that distro's modules, package lists, system files, and dotfiles — a native Hyprland desktop on either side, with Noctalia on Fedora and Caelestia on Arch.
+This is my installer for Fedora and Arch machines. It detects the distro, then sets up the packages, system files, and dotfiles for a native Hyprland desktop. Fedora uses Noctalia and Arch uses Caelestia.
 
 ## ✨ What you get
 
@@ -34,8 +34,8 @@ reboot
 
 Each distro needs a specific base install before running the installer:
 
-- **Fedora** — [distros/fedora/README.md](distros/fedora/README.md)
-- **Arch** — [distros/arch/README.md](distros/arch/README.md)
+- **Fedora:** [distros/fedora/README.md](distros/fedora/README.md)
+- **Arch:** [distros/arch/README.md](distros/arch/README.md)
 
 ## 🎛️ Make it yours
 

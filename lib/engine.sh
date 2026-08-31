@@ -91,7 +91,7 @@ customize_manifest() {
 
   local MENU_ON_QUIT=back rc=0
   menu_select_many \
-    "📦  ${label} — pick packages" \
+    "📦  ${label}: pick packages" \
     'space toggle · a all/none · r reset · enter apply · q cancel' \
     checked required "${rows[@]}" || rc=$?
 
@@ -104,7 +104,7 @@ customize_manifest() {
       deselected+=("${PACKAGES[index]}")
     done
     selection_save_skip "${manifest}" "${deselected[@]}"
-    log_info "Selected for this run — ${label}: $((${#PACKAGES[@]} - ${#deselected[@]})) of ${#PACKAGES[@]} packages."
+    log_info "Selected for this run: ${label} ($((${#PACKAGES[@]} - ${#deselected[@]})) of ${#PACKAGES[@]} packages)."
   fi
 }
 
@@ -130,7 +130,7 @@ customize_step() {
     done
     rc=0
     choice="$(menu_select_one \
-      "🧩  Step ${id} — which group?" \
+      "🧩  Step ${id}: choose a group" \
       '↑/↓ move · enter open · q back' \
       1 \
       "${group_rows[@]}")" || rc=$?
@@ -176,7 +176,7 @@ browse_manifests() {
     done
     rc=0
     choice="$(menu_select_one \
-      '📦  Package groups — pick one to customize' \
+      '📦  Package groups: pick one to customize' \
       '↑/↓ move · enter open · q back' \
       1 \
       "${rows[@]}")" || rc=$?
@@ -199,9 +199,9 @@ pick_gpu_interactively() {
       amd) default=1 ;;
       intel) default=2 ;;
     esac
-    hardware_display=" — ${C_GREEN}detected${C_RESET}"
+    hardware_display=" · ${C_GREEN}detected${C_RESET}"
   elif ((${#hardware[@]} > 1)); then
-    hardware_display=" — ${C_YELLOW}multiple detected: ${hardware[*]}${C_RESET}"
+    hardware_display=" · ${C_YELLOW}multiple detected: ${hardware[*]}${C_RESET}"
   fi
 
   local -a rows=()
@@ -239,7 +239,7 @@ pick_modules_interactively() {
   # browser instead of running anything. Required-marked so space/all cannot
   # toggle it, and unchecked so the selected count stays honest.
   customize_index=${#rows[@]}
-  rows+=('📦  Customize packages — pick per group')
+  rows+=('📦  Customize packages: pick per group')
   required+=(1)
 
   PICK_CHECKED=()

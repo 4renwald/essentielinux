@@ -1,4 +1,4 @@
-# Arch base packages. Lines: `*name :: description` — `*` marks a structural
+# Arch base packages. Lines use `*name :: description`; `*` marks a structural
 # package that cannot be deselected (networking, hardware probing, swap, and
 # the settings backend the desktop's theming depends on).
 *networkmanager :: network management

@@ -8,7 +8,7 @@ source "${REPO_ROOT}/lib/common.sh"
 readonly WALLPAPER_REPOSITORY='https://github.com/dharmx/walls.git'
 readonly WALLPAPER_DIR="${HOME}/Pictures/Wallpapers"
 
-# The categories you actually keep. Only these are downloaded — the rest of
+# The categories you actually keep. Only these are downloaded. The rest of
 # the upstream repository is never fetched, so the checkout stays small.
 readonly -a WALLPAPER_KEPT_CATEGORIES=(
   abstract animated anime apeiros calm centered chillop devicons digital

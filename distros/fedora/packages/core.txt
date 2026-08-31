@@ -1,4 +1,4 @@
-# Fedora base packages. Lines: `*name :: description` — `*` marks a structural
+# Fedora base packages. Lines use `*name :: description`; `*` marks a structural
 # package that cannot be deselected.
 *NetworkManager :: network management
 *dbus :: system message bus

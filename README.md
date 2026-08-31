@@ -33,7 +33,6 @@ Each distro needs a specific base install before running the installer:
 ./install.sh 20 30 55       # run specific steps only
 ./install.sh --list         # list the detected distro's steps
 ./install.sh --gpu amd 20   # force a GPU vendor for this run
-./install.sh --customize    # edit package selections, run nothing
 ```
 
-Run as a regular user. The installer elevates once and that single authorization covers every privileged operation in the run. Re-running the installer, in whole or by step, is supported.
+Run as a regular user. The installer elevates once and that single authorization covers every privileged operation in the run. It is designed for one initial run on a fresh installation, not ongoing system reconciliation.

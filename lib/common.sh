@@ -23,30 +23,6 @@ require_command() {
   command -v "$1" >/dev/null 2>&1 || die "Required command is missing: $1"
 }
 
-# Distro ------------------------------------------------------------------------
-#
-# DISTRO_ID is set by install.sh before the distro catalogue is sourced.
-# Modules run as standalone processes and resolve it lazily here instead.
-
-supported_distro() {
-  case $1 in
-    fedora | arch) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-current_distro() {
-  if [[ -n ${DISTRO_ID:-} ]]; then
-    printf '%s\n' "${DISTRO_ID}"
-    return 0
-  fi
-  [[ -r /etc/os-release ]] || die 'Unable to identify the operating system.'
-  local id
-  id="$(bash -c '. /etc/os-release 2>/dev/null; printf %s "${ID:-}"')"
-  supported_distro "${id}" || die "workstation supports Fedora and Arch Linux; found '${id:-unknown}'."
-  printf '%s\n' "${id}"
-}
-
 # GPU ---------------------------------------------------------------------------
 
 # Valid vendor selectors. `none` covers VMs and headless machines.
@@ -55,10 +31,6 @@ valid_gpu_vendor() {
     nvidia | amd | intel | none) return 0 ;;
     *) return 1 ;;
   esac
-}
-
-gpu_state_file() {
-  printf '%s/workstation/%s/gpu\n' "${XDG_STATE_HOME:-${HOME}/.local/state}" "$(current_distro)"
 }
 
 # Print the GPU vendors physically present, one per line. Empty on VMs.
@@ -74,22 +46,17 @@ gpu_hardware_vendors() {
   done < <(lspci -nmm -d ::0300,::0302,::0380 2>/dev/null | awk -F'"' '{print $2}' | sort -u)
 }
 
-# Resolve the effective GPU vendor: WORKSTATION_GPU env, then the saved
-# choice from a previous interactive run, then single-GPU auto-detection.
+# Resolve the effective GPU vendor from WORKSTATION_GPU or single-GPU
+# auto-detection. Interactive mode exports its choice to each module it runs.
 # Returns 1 when nothing can be resolved.
 gpu_vendor() {
-  local forced="${WORKSTATION_GPU:-}" saved
+  local forced="${WORKSTATION_GPU:-}"
   if [[ -n ${forced} ]]; then
     if valid_gpu_vendor "${forced}"; then
       printf '%s\n' "${forced}"
       return 0
     fi
     die "Invalid WORKSTATION_GPU '${forced}'. Use nvidia, amd, intel, or none."
-  fi
-  saved="$(cat -- "$(gpu_state_file)" 2>/dev/null || true)"
-  if valid_gpu_vendor "${saved}"; then
-    printf '%s\n' "${saved}"
-    return 0
   fi
   local -a hardware=()
   mapfile -t hardware < <(gpu_hardware_vendors)
@@ -195,67 +162,66 @@ as_root() {
 #
 # Manifest lines use the format `name :: description`; a leading `*` marks a
 # structural package that cannot be deselected. Only *deselected* packages are
-# persisted (one `.skip` file per manifest), so packages added to the repository
-# later are installed by default and per-machine choices stay small diffs.
-
-selections_dir() {
-  printf '%s/workstation/%s/selections\n' "${XDG_STATE_HOME:-${HOME}/.local/state}" "$(current_distro)"
-}
+# kept in exported variables for this setup run, so child module processes see
+# the same choices without leaving state on the machine.
 
 # Selection keys are manifest basenames without directory or extension, so the
 # interactive picker (which holds bare names) and modules (which hold manifest
-# paths) resolve the same skip file.
+# paths) resolve the same exported, per-run selection variable.
 selection_key() {
   local name=${1##*/}
   printf '%s\n' "${name%.txt}"
 }
 
-selection_skip_file() {
-  printf '%s/%s.skip\n' "$(selections_dir)" "$(selection_key "$1")"
+selection_variable() {
+  local key
+  key="$(selection_key "$1")"
+  key=${key^^}
+  key=${key//[![:alnum:]_]/_}
+  printf 'WORKSTATION_SKIP_%s\n' "${key}"
 }
 
 selection_load_skip() {
   SKIP_ITEMS=()
-  local file
-  file="$(selection_skip_file "$1")"
-  [[ -r ${file} ]] || return 0
-  mapfile -t SKIP_ITEMS < <(grep -v '^[[:space:]]*$' "${file}" 2>/dev/null || true)
+  local variable values
+  variable="$(selection_variable "$1")"
+  values=${!variable:-}
+  [[ -n ${values} ]] || return 0
+  mapfile -t SKIP_ITEMS < <(printf '%s' "${values}")
 }
 
 selection_is_skipped() {
-  local manifest=$1 name=$2 file
-  file="$(selection_skip_file "${manifest}")"
-  [[ -r ${file} ]] || return 1
-  grep -Fxq -- "${name}" "${file}"
+  local manifest=$1 name=$2 variable values item
+  variable="$(selection_variable "${manifest}")"
+  values=${!variable:-}
+  [[ -n ${values} ]] || return 1
+  while IFS= read -r item; do
+    [[ ${item} == "${name}" ]] && return 0
+  done <<< "${values}"
+  return 1
 }
 
-# Save the deselected list for a manifest (empty arguments list = nothing deselected).
+# Export the deselected list for a manifest. Modules inherit it from the
+# interactive installer, but it vanishes when that one setup run exits.
 selection_save_skip() {
   local manifest=$1
   shift
-  local file
-  file="$(selection_skip_file "${manifest}")"
-  mkdir -p -- "$(dirname -- "${file}")"
+  local variable values='' item
+  variable="$(selection_variable "${manifest}")"
   if (($# > 0)); then
-    printf '%s\n' "$@" >"${file}"
+    for item in "$@"; do
+      values+="${item}"$'\n'
+    done
+    export "${variable}=${values}"
   else
-    : >"${file}"
+    unset "${variable}"
   fi
 }
 
-# Remove a manifest's customization entirely.
-selection_clear() {
-  rm -f -- "$(selection_skip_file "$1")"
-}
-
-# Number of deselected packages recorded for a manifest, for menu display.
+# Number of deselected packages in this run, for menu display.
 selection_count_skip() {
-  local file count=0
-  file="$(selection_skip_file "$1")"
-  if [[ -r ${file} ]]; then
-    count="$(grep -c . -- "${file}" 2>/dev/null || true)"
-  fi
-  printf '%s\n' "${count:-0}"
+  selection_load_skip "$1"
+  printf '%s\n' "${#SKIP_ITEMS[@]}"
 }
 
 # Parse a manifest into PACKAGES / PACKAGE_DESCRIPTIONS / PACKAGE_REQUIRED.

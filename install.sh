@@ -43,7 +43,6 @@ require_user
 
 # ── Argument parsing ─────────────────────────────────────────────────────────
 declare -a args=() SELECTED=() PICK_CHECKED=() MANIFESTS=()
-CUSTOMIZE_MODE=''
 
 usage() {
   cat <<'EOF'
@@ -51,8 +50,6 @@ Usage: ./install.sh                 Interactive GPU and module picker
        ./install.sh 20 30 35        Run specific module steps
        ./install.sh --list          List the detected distro's modules
        ./install.sh --gpu amd 20    Force a GPU vendor for this run
-       ./install.sh --customize     Pick packages per group, run nothing
-       ./install.sh --customize=core  Edit one package group directly
        WORKSTATION_GPU=none ./install.sh 20
 
 The installer detects the distro from /etc/os-release (Fedora or Arch), then
@@ -60,10 +57,9 @@ loads that distro's modules, manifests, and device-specific steps.
 
 Interactive mode: space toggles steps, enter runs, c customizes the highlighted
 step package by package, and the "Customize packages" row at the bottom opens a
-browser over every package group. One password prompt covers the whole run;
-choices for GPU and deselected packages are remembered per machine and reused
-by direct runs. Override the GPU with --gpu or WORKSTATION_GPU
-(nvidia, amd, intel, none).
+browser over every package group. Package choices apply only to the current
+run. One password prompt covers the whole run. Override the GPU with --gpu or
+WORKSTATION_GPU (nvidia, amd, intel, none).
 EOF
 }
 
@@ -92,14 +88,6 @@ while (($# > 0)); do
       list_modules
       exit 0
       ;;
-    --customize)
-      CUSTOMIZE_MODE=browse
-      shift
-      ;;
-    --customize=*)
-      CUSTOMIZE_MODE=${1#*=}
-      shift
-      ;;
     -h | --help)
       usage
       exit 0
@@ -114,27 +102,10 @@ done
 if [[ -n ${WORKSTATION_GPU:-} ]]; then
   valid_gpu_vendor "${WORKSTATION_GPU}" \
     || die "Invalid WORKSTATION_GPU '${WORKSTATION_GPU}'. Use nvidia, amd, intel, or none."
+  export WORKSTATION_GPU
 fi
 
 menu_banner "${DISTRO_INFO}"
-
-# Package customization without running anything: browse every group, or edit
-# one directly. Saved choices apply to later runs of any module that installs
-# the group.
-if [[ -n ${CUSTOMIZE_MODE} ]]; then
-  if [[ ${CUSTOMIZE_MODE} != browse ]]; then
-    [[ -r ${DISTRO_ROOT}/packages/${CUSTOMIZE_MODE}.txt ]] \
-      || die "No package group named '${CUSTOMIZE_MODE}' exists for ${DISTRO_ID}."
-  fi
-  menu_require_tty
-  if [[ ${CUSTOMIZE_MODE} == browse ]]; then
-    browse_manifests
-  else
-    customize_manifest "${CUSTOMIZE_MODE}"
-  fi
-  log_success 'Package selections saved; they apply to the next run.'
-  exit 0
-fi
 
 if ((${#args[@]} == 0)); then
   pick_gpu_interactively

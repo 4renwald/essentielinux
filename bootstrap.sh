@@ -38,10 +38,8 @@ case ${distro} in
     ;;
 esac
 
-if [[ -d "${TARGET_DIR}/.git" ]]; then
-  git -C "${TARGET_DIR}" pull --ff-only
-elif [[ -e "${TARGET_DIR}" ]]; then
-  printf 'Error: %s already exists and is not a Git repository.\n' "${TARGET_DIR}" >&2
+if [[ -e "${TARGET_DIR}" ]]; then
+  printf 'Error: %s already exists. This bootstrap is for a fresh checkout; choose a different WORKSTATION_DIR.\n' "${TARGET_DIR}" >&2
   exit 1
 else
   git clone "${REPO_URL}" "${TARGET_DIR}"

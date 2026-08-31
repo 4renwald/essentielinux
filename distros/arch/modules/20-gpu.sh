@@ -22,7 +22,7 @@ fi
 
 if [[ -z ${gpu} ]]; then
   log_warn 'No GPU vendor could be detected or selected; skipping the GPU driver stack.'
-  log_warn 'Choose one with ./install.sh or WORKSTATION_GPU=nvidia|amd|intel|none and rerun module 20.'
+  log_warn 'Choose one in the interactive installer or set WORKSTATION_GPU=nvidia|amd|intel|none.'
   exit 0
 fi
 

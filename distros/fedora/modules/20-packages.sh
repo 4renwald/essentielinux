@@ -20,12 +20,8 @@ if ! gpu="$(gpu_vendor)"; then
     die "Multiple GPU vendors detected (${hardware[*]}). Pick one interactively with ./install.sh, or set WORKSTATION_GPU=nvidia|amd|intel|none."
   fi
   log_warn 'No GPU vendor could be detected or selected; skipping the GPU driver stack.'
-  log_warn 'Choose one with ./install.sh or WORKSTATION_GPU=nvidia|amd|intel|none and rerun module 20.'
+  log_warn 'Choose one in the interactive installer or set WORKSTATION_GPU=nvidia|amd|intel|none.'
 else
-  # Persist the resolved vendor: startup.lua reads it to decide whether the
-  # NVIDIA environment variables apply to this machine's session.
-  mkdir -p -- "$(dirname -- "$(gpu_state_file)")"
-  printf '%s\n' "${gpu}" >"$(gpu_state_file)"
   case ${gpu} in
     none)
       log_warn 'GPU vendor set to none (VM or headless); skipping the GPU driver stack.'

@@ -59,7 +59,7 @@ run_module() {
     # module exit status is only visible inside the else branch.
     status=$?
     FAILED_MODULES+=("${id} ${name} (exit ${status})")
-    log_error "Step ${id} ${name} failed (exit ${status}); later steps still ran. Fix the cause, then rerun ./install.sh ${id}."
+    log_error "Step ${id} ${name} failed (exit ${status}); later steps still ran. Resolve the cause before continuing setup."
   fi
 }
 
@@ -89,9 +89,6 @@ customize_manifest() {
     required+=("${PACKAGE_REQUIRED[index]}")
   done
 
-  local previous=''
-  previous="$(cat -- "$(selection_skip_file "${manifest}")" 2>/dev/null || true)"
-
   local MENU_ON_QUIT=back rc=0
   menu_select_many \
     "📦  ${label} — pick packages" \
@@ -107,16 +104,7 @@ customize_manifest() {
       deselected+=("${PACKAGES[index]}")
     done
     selection_save_skip "${manifest}" "${deselected[@]}"
-    log_info "Saved selection for ${label}: $((${#PACKAGES[@]} - ${#deselected[@]})) of ${#PACKAGES[@]} packages."
-  else
-    local file
-    file="$(selection_skip_file "${manifest}")"
-    if [[ -n ${previous} ]]; then
-      mkdir -p -- "$(dirname -- "${file}")"
-      printf '%s\n' "${previous}" >"${file}"
-    else
-      rm -f -- "${file}"
-    fi
+    log_info "Selected for this run — ${label}: $((${#PACKAGES[@]} - ${#deselected[@]})) of ${#PACKAGES[@]} packages."
   fi
 }
 
@@ -156,7 +144,7 @@ customize_step() {
 
 # Package customization browser: every selectable group of the distro in one
 # menu, whether or not its step is about to run. Opened from the dedicated
-# 'Customize packages' row of the module picker or via --customize.
+# 'Customize packages' row of the module picker.
 browse_manifests() {
   local -a keys=() steps_of=()
   local id m index seen
@@ -236,10 +224,8 @@ pick_gpu_interactively() {
   trap - INT
 
   vendor=${GPU_VALUES[choice]}
-  WORKSTATION_GPU=${vendor}
-  mkdir -p -- "$(dirname -- "$(gpu_state_file)")"
-  printf '%s\n' "${vendor}" >"$(gpu_state_file)"
-  log_info "GPU vendor saved as ${vendor}."
+  export WORKSTATION_GPU=${vendor}
+  log_info "GPU vendor selected for this setup run: ${vendor}."
 }
 
 pick_modules_interactively() {

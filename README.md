@@ -1,6 +1,17 @@
-# essentielinux
+# 🪩 essentielinux
+
+> A fresh Linux install, dressed up and ready to dance.
 
 One installer for my Fedora and Arch machines. It detects the running distro, then applies that distro's modules, package lists, system files, and dotfiles — a native Hyprland desktop on either side, with Noctalia on Fedora and Caelestia on Arch.
+
+## ✨ What you get
+
+| Fedora 🎛️ | Arch 🎚️ |
+| --- | --- |
+| Hyprland + Noctalia | Hyprland + Caelestia |
+| Ghostty themed by Noctalia | Ghostty themed by Caelestia |
+| Helium, VSCodium, Nextcloud, qBittorrent | Helium, VS Code, Nextcloud, qBittorrent |
+| PipeWire, gaming, printing, Snapper on btrfs | PipeWire, gaming, AUR tools, Snapper on btrfs |
 
 ## 🚀 Quick start
 
@@ -19,14 +30,14 @@ cd essentielinux
 reboot
 ```
 
-## 📋 Prerequisites
+## 🟢 Before you begin
 
 Each distro needs a specific base install before running the installer:
 
 - **Fedora** — [distros/fedora/README.md](distros/fedora/README.md)
 - **Arch** — [distros/arch/README.md](distros/arch/README.md)
 
-## 🧭 Usage
+## 🎛️ Make it yours
 
 ```bash
 ./install.sh                # interactive: GPU, steps, package customization
@@ -34,5 +45,7 @@ Each distro needs a specific base install before running the installer:
 ./install.sh --list         # list the detected distro's steps
 ./install.sh --gpu amd 20   # force a GPU vendor for this run
 ```
+
+## ⚠️ Fresh installs only
 
 Run as a regular user. The installer elevates once and that single authorization covers every privileged operation in the run. It is designed for one initial run on a fresh installation, not ongoing system reconciliation.

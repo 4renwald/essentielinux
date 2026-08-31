@@ -37,8 +37,9 @@ menu_require_tty() {
 # Print the header: a bold title line over a dim one-line distro summary.
 menu_banner() {
   local distro_info=$1
-  printf '\n%sessentielinux%s\n' "${C_BOLD}${C_CYAN}" "${C_RESET}" >&2
-  printf '\n%s ◆  %s%s\n' "${C_DIM}" "${distro_info}" "${C_RESET}" >&2
+  printf '\n%s🪩 essentielinux%s\n' "${C_BOLD}${C_MAGENTA}" "${C_RESET}" >&2
+  printf '%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n' "${C_CYAN}" "${C_RESET}" >&2
+  printf '%s ✦  %s%s\n' "${C_DIM}" "${distro_info}" "${C_RESET}" >&2
   printf '\n' >&2
 }
 

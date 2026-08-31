@@ -7,16 +7,16 @@ readonly WORKSTATION_COMMON_LOADED=1
 
 if [[ -t 1 ]]; then
   readonly C_RESET=$'\e[0m' C_BOLD=$'\e[1m' C_DIM=$'\e[2m'
-  readonly C_CYAN=$'\e[1;36m' C_GREEN=$'\e[1;32m' C_YELLOW=$'\e[1;33m' C_RED=$'\e[1;31m'
+  readonly C_CYAN=$'\e[1;36m' C_GREEN=$'\e[1;32m' C_YELLOW=$'\e[1;33m' C_RED=$'\e[1;31m' C_MAGENTA=$'\e[1;35m'
 else
-  readonly C_RESET='' C_BOLD='' C_DIM='' C_CYAN='' C_GREEN='' C_YELLOW='' C_RED=''
+  readonly C_RESET='' C_BOLD='' C_DIM='' C_CYAN='' C_GREEN='' C_YELLOW='' C_RED='' C_MAGENTA=''
 fi
 
-log_step() { printf '\n%s▸%s %s\n' "${C_CYAN}" "${C_RESET}" "${C_BOLD}$*${C_RESET}"; }
-log_success() { printf '%s  ✔  %s%s\n' "${C_GREEN}" "$*${C_RESET}"; }
-log_info() { printf '%s  ·  %s%s\n' "${C_DIM}" "$*${C_RESET}"; }
-log_warn() { printf '%s  !  %s%s\n' "${C_YELLOW}" "$*${C_RESET}" >&2; }
-log_error() { printf '%s  ✖  %s%s\n' "${C_RED}" "$*${C_RESET}" >&2; }
+log_step() { printf '\n%s🪩%s %s\n' "${C_CYAN}" "${C_RESET}" "${C_BOLD}$*${C_RESET}"; }
+log_success() { printf '%s  ✅  %s%s\n' "${C_GREEN}" "$*${C_RESET}"; }
+log_info() { printf '%s  💬  %s%s\n' "${C_DIM}" "$*${C_RESET}"; }
+log_warn() { printf '%s  ⚠️   %s%s\n' "${C_YELLOW}" "$*${C_RESET}" >&2; }
+log_error() { printf '%s  ❌  %s%s\n' "${C_RED}" "$*${C_RESET}" >&2; }
 die() { log_error "$*"; exit 1; }
 
 require_command() {

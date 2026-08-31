@@ -1,16 +1,5 @@
 # facile-linux
 
-```text
-  ▄▄                ▄▄             ▄▄
- ██             ▀▀  ██             ██ ▀▀
-▀██▀ ▀▀█▄ ▄████ ██  ██ ▄█▀█▄       ██ ██  ████▄ ██ ██ ██ ██
- ██ ▄█▀██ ██    ██  ██ ██▄█▀ ▀▀▀▀▀ ██ ██  ██ ██ ██ ██  ███
- ██ ▀█▄██ ▀████ ██▄ ██ ▀█▄▄▄       ██ ██▄ ██ ██ ▀██▀█ ██ ██
-
- ◆  Fedora · Hyprland · Noctalia
- ◆  Arch · Hyprland · Caelestia
-```
-
 One installer for my Fedora and Arch machines. It detects the running distro, then applies that distro's modules, package lists, system files, and dotfiles — a native Hyprland desktop on either side, with Noctalia on Fedora and Caelestia on Arch.
 
 ## 🚀 Quick start

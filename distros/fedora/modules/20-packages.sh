@@ -22,15 +22,7 @@ else
   for gpu in "${gpu_vendors[@]}"; do
     case ${gpu} in
       nvidia)
-        nvidia_flavor="$(nvidia_kernel_module_flavor)" \
-          || die 'NVIDIA was detected but no display PCI ID could be read.'
-        case ${nvidia_flavor} in
-          open) log_info 'NVIDIA PCI IDs support the open kernel module.' ;;
-          proprietary) log_info 'NVIDIA PCI IDs require the proprietary kernel module.' ;;
-          unsupported)
-            die "NVIDIA PCI ID is older than the current driver branch. Select a maintained legacy driver manually: $(nvidia_display_pci_ids | paste -sd ',')."
-            ;;
-        esac
+        log_info "RPM Fusion's akmod-nvidia will select the NVIDIA module for this PCI ID."
         install_dnf_manifest "${DISTRO_ROOT}/packages/nvidia.txt"
         if selection_is_skipped nvidia akmod-nvidia; then
           log_warn 'akmod-nvidia is deselected; skipping the kernel module build.'

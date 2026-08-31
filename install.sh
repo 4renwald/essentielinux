@@ -147,7 +147,7 @@ else
   SELECTED=("${args[@]}")
 fi
 
-printf '\n%s Running ${DISTRO_ID} setup: %s\n\n' "${C_CYAN}▸${C_RESET}" "${C_BOLD}${SELECTED[*]}${C_RESET}"
+printf '\n%s Running %s setup: %s\n\n' "${C_CYAN}▸${C_RESET}" "${DISTRO_ID}" "${C_BOLD}${SELECTED[*]}${C_RESET}"
 
 # Elevate only if one of the selected steps is privileged.
 needs_root=0

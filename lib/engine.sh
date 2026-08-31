@@ -123,7 +123,7 @@ customize_step() {
     return 0
   fi
 
-  local index rc=0 choice
+  local index rc=0 choice group_highlight
   while true; do
     local -a group_rows=('← Back')
     for ((index = 0; index < ${#MANIFESTS[@]}; index++)); do
@@ -135,8 +135,10 @@ customize_step() {
       '↑/↓ move · enter open · q back' \
       1 \
       "${group_rows[@]}")" || rc=$?
+    group_highlight=${MENU_HIGHLIGHT}
     ((rc == 2)) && break
     ((choice == 0)) && break
+    MENU_INIT_HIGHLIGHT=${group_highlight}
     customize_manifest "${MANIFESTS[choice - 1]}"
   done
 }
@@ -166,7 +168,7 @@ browse_manifests() {
   done
   ((${#keys[@]} > 0)) || { log_info 'No selectable package groups.'; return 0; }
 
-  local MENU_ON_QUIT=back rc=0 choice
+  local MENU_ON_QUIT=back rc=0 choice group_highlight
   while true; do
     local -a rows=()
     for ((index = 0; index < ${#keys[@]}; index++)); do
@@ -179,7 +181,9 @@ browse_manifests() {
       '↑/↓ move · enter open · q back' \
       1 \
       "${rows[@]}")" || rc=$?
+    group_highlight=${MENU_HIGHLIGHT}
     ((rc == 2)) && break
+    MENU_INIT_HIGHLIGHT=${group_highlight}
     customize_manifest "${keys[choice]}"
   done
 }
@@ -250,26 +254,29 @@ pick_modules_interactively() {
   menu_require_tty
   menu_hide_cursor
   trap menu_interrupted INT
-  local rc
+  local rc picker_highlight
   while true; do
     rc=0
     menu_select_many \
       '🧩  Which steps should run on this machine?' \
       '↑/↓ move · space toggle · c customize step · enter run · q quit' \
       PICK_CHECKED required "${rows[@]}" || rc=$?
+    picker_highlight=${MENU_HIGHLIGHT}
     if ((rc == 3)); then
-      if ((MENU_HIGHLIGHT < ${#MODULE_IDS[@]})); then
-        customize_step "${MODULE_IDS[MENU_HIGHLIGHT]}"
+      if ((picker_highlight < ${#MODULE_IDS[@]})); then
+        customize_step "${MODULE_IDS[picker_highlight]}"
       else
         browse_manifests
       fi
+      MENU_INIT_HIGHLIGHT=${picker_highlight}
       continue
     fi
     if ((rc == 2)); then
       menu_interrupted
     fi
-    if ((MENU_HIGHLIGHT == customize_index)); then
+    if ((picker_highlight == customize_index)); then
       browse_manifests
+      MENU_INIT_HIGHLIGHT=${picker_highlight}
       continue
     fi
     break

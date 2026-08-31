@@ -1,4 +1,4 @@
-# workstation
+# linux-workstation
 
 ```text
 ┌─┐┌─┐ ┌─┐ ┌─┐ ┌┬┐ ┌─┐ ┌┬┐ ┌─┐ ┌┬┐ ┌┐ ┌─┐ ┌─┐
@@ -18,16 +18,16 @@ The two distros never share a config file. Everything distro-specific lives unde
 On a fresh machine (no cloning needed):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/4renwald/workstation/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/4renwald/linux-workstation/main/bootstrap.sh | bash
 ```
 
-The bootstrap installs `git` through the detected distro's package manager, clones the repository to `~/workstation`, and starts the interactive installer.
+The bootstrap installs `git` through the detected distro's package manager, clones the repository to `~/linux-workstation`, and starts the interactive installer.
 
 Prefer doing it by hand:
 
 ```bash
-git clone https://github.com/4renwald/workstation.git
-cd workstation
+git clone https://github.com/4renwald/linux-workstation.git
+cd linux-workstation
 ./install.sh
 reboot
 ```

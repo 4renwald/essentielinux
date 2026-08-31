@@ -10,6 +10,11 @@
 #                      enter, 2 on back when MENU_ON_QUIT=back, 3 when the
 #                      customize key (c) was pressed; aborts otherwise.
 #   MENU_LAST_KEY / MENU_HIGHLIGHT are set on every return for the caller.
+#   Every return path erases the frame first, so nested menus (the package
+#   customization flow) never leave stale copies behind. Callers that redraw
+#   a menu in a loop may set MENU_INIT_HIGHLIGHT to the previous
+#   MENU_HIGHLIGHT so the cursor comes back where the user left it; the menu
+#   consumes (unsets) it after reading.
 
 if [[ -n ${WORKSTATION_MENU_LOADED:-} ]]; then
   return 0
@@ -120,11 +125,30 @@ _frame_height() {
   echo $(( $1 + 4 ))
 }
 
+# Erase the frame of a menu showing $1 rows. Called on every redraw and
+# before every return; skipping it on a return is what makes nested menus
+# (customize flows) stack stale copies in the terminal.
+_menu_erase() {
+  printf '\e[%dA\e[J' "$( _frame_height "$1" )" >&2
+}
+
+# Initial cursor row for a menu, from MENU_INIT_HIGHLIGHT if the caller set
+# it, clamped into range; falls back to $2. Consumes the variable so it never
+# leaks into an unrelated nested menu.
+_menu_start_row() {
+  local wanted=${MENU_INIT_HIGHLIGHT:-$2}
+  unset MENU_INIT_HIGHLIGHT
+  ((wanted >= 0 && wanted < $1)) && { echo "${wanted}"; return 0; }
+  echo "${2}"
+}
+
 # Single select: menu_select_one title hint default_index option...
 menu_select_one() {
-  local title=$1 hint=$2 highlight=$3
+  local title=$1 hint=$2 default=$3
   shift 3
   local -a rows=("$@")
+  local highlight
+  highlight="$(_menu_start_row ${#rows[@]} "${default}")"
   local key
   while true; do
     printf '\n%s\n' "${C_BOLD}${title}${C_RESET}" >&2
@@ -137,19 +161,21 @@ menu_select_one() {
       down) ((highlight = (highlight + 1) % ${#rows[@]})) ;;
       enter)
         MENU_LAST_KEY=enter
+        _menu_erase ${#rows[@]}
         echo "${highlight}"
         return 0
         ;;
       back | quit)
         if [[ ${MENU_ON_QUIT:-abort} == back ]]; then
           MENU_LAST_KEY=back
+          _menu_erase ${#rows[@]}
           return 2
         fi
         menu_interrupted
         ;;
       none) : ;;
     esac
-    printf '\e[%dA\e[J' "$( _frame_height ${#rows[@]} )" >&2
+    _menu_erase ${#rows[@]}
   done
 }
 
@@ -167,7 +193,8 @@ menu_select_many() {
     local -n required_ref=${required_name}
     required=("${required_ref[@]}")
   fi
-  local highlight=0 key item count
+  local highlight key item count
+  highlight="$(_menu_start_row ${#rows[@]} 0)"
   while true; do
     count=0
     for ((item = 0; item < ${#marks[@]}; item++)); do
@@ -204,21 +231,24 @@ menu_select_many() {
         ;;
       customize)
         MENU_LAST_KEY=customize
+        _menu_erase ${#rows[@]}
         return 3
         ;;
       enter)
         MENU_LAST_KEY=enter
+        _menu_erase ${#rows[@]}
         return 0
         ;;
       back | quit)
         if [[ ${MENU_ON_QUIT:-abort} == back ]]; then
           MENU_LAST_KEY=back
+          _menu_erase ${#rows[@]}
           return 2
         fi
         menu_interrupted
         ;;
       none) : ;;
     esac
-    printf '\e[%dA\e[J' "$( _frame_height ${#rows[@]} )" >&2
+    _menu_erase ${#rows[@]}
   done
 }

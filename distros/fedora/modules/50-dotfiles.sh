@@ -48,7 +48,27 @@ copy_tree() {
   done < <(find "${root}" -type f -print0 | sort -z)
 }
 
+disable_caelestia_terminal_palette_replay() {
+  # Caelestia's Fish component replays OSC palette escape sequences from its
+  # state directory whenever Fish starts.  A leftover conf.d snippet therefore
+  # overrides Ghostty's Noctalia theme after the terminal has already loaded it.
+  # Preserve the old snippet in the normal backup location rather than deleting
+  # it, but never leave it active in the Fedora/Noctalia session.
+  local fish_conf_d="${HOME}/.config/fish/conf.d" snippet
+  [[ -d ${fish_conf_d} ]] || return 0
+
+  while IFS= read -r -d '' snippet; do
+    if grep -Fq 'caelestia/sequences.txt' "${snippet}"; then
+      path_has_linked_parent "${snippet}" \
+        && die "Refusing to disable a Caelestia palette replay through a linked parent of ${snippet}."
+      backup_target "${snippet}"
+      log_warn "Disabled Caelestia's Fish palette replay at ${snippet}; Noctalia now owns the terminal palette."
+    fi
+  done < <(find "${fish_conf_d}" -type f -print0 | sort -z)
+}
+
 log_step 'Copying managed configuration (never symlinking it)'
+disable_caelestia_terminal_palette_replay
 copy_tree "${DISTRO_ROOT}/dotfiles/desktop"
 copy_tree "${DISTRO_ROOT}/dotfiles/agents"
 

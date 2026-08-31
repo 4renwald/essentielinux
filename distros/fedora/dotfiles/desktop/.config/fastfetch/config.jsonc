@@ -1,9 +1,12 @@
 {
     "logo": null,
     "display": {
+        // Keep every colour in the terminal's ANSI palette.  In particular,
+        // do not use xterm indices 16–18 here: they are fixed cube colours
+        // (almost black/navy), not Ghostty's Noctalia-managed 0–15 palette.
         "separator": "  ",
         "color": "white",
-        "constants": ["\u001b[37m", "\u001b[38;5;16m", "\u001b[38;5;17m", "\u001b[38;5;18m"]
+        "constants": ["\u001b[37m", "\u001b[90m", "\u001b[34m", "\u001b[36m"]
     },
     "modules": [
         "break",

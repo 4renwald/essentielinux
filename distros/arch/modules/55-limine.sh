@@ -42,11 +42,21 @@ as_root pacman -S --needed --noconfirm limine efibootmgr
 require_command findmnt
 require_command lsblk
 
+# `findmnt --target` has to resolve the path it is asked about, and the ESP is
+# routinely mounted root-only (archinstall's fmask/dmask leave /boot without
+# search permission for anyone else). Run these lookups through the same
+# elevation every other access to these paths already uses, or the module
+# cannot even name the filesystem holding a config it just read as root.
+mount_field_of() {
+  local field=$1 path=$2 value
+  value="$(as_root findmnt --noheadings --first-only --output "${field}" --target "${path}")" \
+    || return 1
+  [[ -n ${value} ]] || return 1
+  printf '%s\n' "${value}"
+}
+
 mount_point_of() {
-  local path=$1 target
-  target="$(findmnt --noheadings --first-only --output TARGET --target "${path}")" || return 1
-  [[ -n ${target} ]] || return 1
-  printf '%s\n' "${target}"
+  mount_field_of TARGET "$1"
 }
 
 # Keeping the ESP read-only between boot updates limits accidental damage, but
@@ -60,9 +70,8 @@ ensure_mount_writable() {
       return 0
     fi
   done
-  options="$(findmnt --noheadings --first-only --output OPTIONS --target "${target}")" \
+  options="$(mount_field_of OPTIONS "${target}")" \
     || die "Unable to read mount options for ${target}."
-  [[ -n ${options} ]] || die "Unable to read mount options for ${target}."
   if [[ ,${options}, == *,ro,* ]]; then
     log_step "Temporarily remounting ${target} read-write"
     as_root mount --options remount,rw --target "${target}"
@@ -277,8 +286,7 @@ esp_mount_target="$(mount_point_of "${LOADER_FILE}")" \
 # On anything else the theming above still stands and whatever entry the
 # machine already boots from is left alone, which beats registering an entry
 # the firmware cannot follow.
-esp_fstype="$(findmnt --noheadings --first-only --output FSTYPE --target "${esp_mount_target}")" \
-  || esp_fstype=''
+esp_fstype="$(mount_field_of FSTYPE "${esp_mount_target}")" || esp_fstype=''
 if [[ ${esp_fstype} != vfat ]]; then
   log_warn "${LOADER_FILE} is on a ${esp_fstype:-unknown} filesystem rather than an EFI system partition; leaving the firmware boot entries untouched."
   exit 0
@@ -289,7 +297,7 @@ loader_path="${LOADER_FILE#"${esp_mount_target}"}"
 loader_path="${loader_path//\//\\}"
 readonly loader_path
 
-esp_source="$(findmnt --noheadings --first-only --output SOURCE --target "${esp_mount_target}")" \
+esp_source="$(mount_field_of SOURCE "${esp_mount_target}")" \
   || die "Unable to read the block device behind ${esp_mount_target}."
 esp_source="$(readlink -f -- "${esp_source}")"
 [[ -b ${esp_source} ]] || die "The Limine partition source is not a block partition: ${esp_source}"

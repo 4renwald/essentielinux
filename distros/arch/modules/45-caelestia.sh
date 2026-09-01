@@ -408,14 +408,18 @@ zen_distribution_dir() {
 }
 
 install_caelestiafox_native_host() {
-  local pkgbuild="${CAELESTIA_DOTS_DIR}/packages/caelestia-firefox-theme/PKGBUILD"
+  local package_dir="${CAELESTIA_DOTS_DIR}/packages/caelestia-firefox-theme"
+  local pkgbuild="${package_dir}/PKGBUILD"
   local manifest_dir="${HOME}/.mozilla/native-messaging-hosts"
   local manifest_temp
   [[ -f ${pkgbuild} ]] \
     || die "Caelestia's native browser theme package is missing: ${pkgbuild}"
   if [[ ! -x /usr/lib/caelestia/caelestiafox ]]; then
     log_step 'Installing CaelestiaFox native messaging support for Zen'
-    paru -Bi --noconfirm "${pkgbuild}" \
+    # paru -B takes the directory containing the PKGBUILD, not the PKGBUILD
+    # itself: handed the file it appends /.SRCINFO to it and fails with
+    # "Not a directory".
+    paru -Bi --noconfirm "${package_dir}" \
       || die 'The CaelestiaFox native messaging package could not be built.'
   fi
   [[ -x /usr/lib/caelestia/caelestiafox ]] \

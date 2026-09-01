@@ -53,8 +53,8 @@ copy_tree "${DISTRO_ROOT}/dotfiles/desktop"
 copy_tree "${DISTRO_ROOT}/dotfiles/agents"
 
 xdg-user-dirs-update
-xdg-settings set default-web-browser app.zen_browser.zen.desktop \
-  || log_warn 'Zen Browser was installed, but xdg-settings could not make it the default.'
+xdg-settings set default-web-browser helium.desktop \
+  || log_warn 'Helium was installed, but xdg-settings could not make it the default.'
 
 if command -v noctalia >/dev/null 2>&1; then
   noctalia config validate "${HOME}/.config/noctalia/config.toml"

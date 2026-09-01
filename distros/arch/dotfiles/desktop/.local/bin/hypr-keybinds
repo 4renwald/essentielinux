@@ -208,7 +208,7 @@ load_descriptions() {
 3|SUPER + R|Toggle todo workspace
 3|CTRL + SHIFT + Escape|Toggle system monitor workspace
 4|SUPER + T|Terminal (ghostty)
-4|SUPER + W|Browser (zen-browser)
+4|SUPER + W|Browser (helium-browser)
 4|SUPER + C|Editor (code)
 4|SUPER + E|File explorer (thunar)
 4|CTRL + ALT + V|Audio settings (pavucontrol)

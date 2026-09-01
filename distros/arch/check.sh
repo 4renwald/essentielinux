@@ -154,6 +154,12 @@ else
   fail "${caelestia_conf}/hypr-vars.lua does not move kbShowPanels, so SUPER + K is bound twice. Run ./install.sh 50."
 fi
 
+if grep -Eq 'browser[[:space:]]*=[[:space:]]*"helium-browser"' "${caelestia_conf}/hypr-vars.lua" 2>/dev/null; then
+  pass "Caelestia's browser keybind launches Helium, the default browser."
+else
+  fail "${caelestia_conf}/hypr-vars.lua does not point Caelestia's browser keybind at helium-browser. Run ./install.sh 50."
+fi
+
 log_step "Proton builds"
 steam_data_dir=''
 for candidate in \
@@ -897,10 +903,10 @@ else
   fail "/etc/pam.d/greetd does not unlock the login keyring, so secrets prompt every session. Run ./install.sh 40."
 fi
 
-if default_browser="$(xdg-settings get default-web-browser 2>/dev/null)" && [[ ${default_browser} == *zen* ]]; then
+if default_browser="$(xdg-settings get default-web-browser 2>/dev/null)" && [[ ${default_browser} == *helium* ]]; then
   pass "The default browser for xdg-open is ${default_browser}."
 else
-  fail "The default browser is '${default_browser:-unset}', not a Zen Browser desktop entry. Run ./install.sh 50."
+  fail "The default browser is '${default_browser:-unset}', not a Helium desktop entry. Run ./install.sh 50."
 fi
 
 for pacman_option in Color VerbosePkgLists ParallelDownloads; do

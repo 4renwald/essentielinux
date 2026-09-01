@@ -8,6 +8,11 @@
 -- hl.exec_cmd failures are silent, so Code - OSS is included in the required
 -- package manifest and SUPER + C always has a concrete editor target.
 --
+-- browser drives Caelestia's browser keybind: Helium is the default browser,
+-- and Zen remains installed as the secondary Firefox-based browser. As with
+-- the editor, helium-browser-bin is in the AUR manifest so the keybind always
+-- has a concrete target.
+--
 -- sleepGestureCmd overrides Caelestia's suspend-then-hibernate default. This
 -- system swaps only to zram, which cannot be a hibernation target, so the
 -- hibernate half of that command could never succeed.
@@ -24,7 +29,7 @@ return {
     automaticNightLight = true,
 
     terminal             = "ghostty",
-    browser              = "zen-browser",
+    browser              = "helium-browser",
     editor               = "code",
     fileExplorer         = "thunar",
     audioSettings        = "pavucontrol",

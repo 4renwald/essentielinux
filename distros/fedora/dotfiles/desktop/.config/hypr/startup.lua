@@ -13,7 +13,7 @@ local env = {
     "_JAVA_AWT_WM_NONREPARENTING,1",
     "WLR_NO_HARDWARE_CURSORS,1",
     "TERMINAL,ghostty",
-    "BROWSER,zen-browser",
+    "BROWSER,helium",
     "EDITOR,codium",
 }
 

@@ -3,7 +3,7 @@ codium :: VSCodium editor
 gh :: GitHub CLI
 glab :: GitLab CLI
 mullvad-vpn :: Mullvad VPN client
-helium-bin :: Helium browser
+brave-origin :: Brave Origin browser
 telegram-desktop :: Telegram client
 claude-code :: Claude Code CLI
 mpv :: video player and this system's browser-video upscaler

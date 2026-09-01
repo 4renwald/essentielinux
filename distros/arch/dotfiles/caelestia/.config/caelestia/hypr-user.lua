@@ -39,7 +39,7 @@ hl.bind(
     { description = "Toggle night light" }
 )
 
--- Hardware video decoding for the browsers. These belong in the Hyprland
+-- Hardware video decoding for the browser. These belong in the Hyprland
 -- environment rather than ~/.config/environment.d: greetd starts the session
 -- through start-hyprland, not through a systemd user unit, so environment.d is
 -- not read by anything Hyprland spawns. Every browser here is a descendant of
@@ -51,10 +51,3 @@ hl.bind(
 -- series 525 and later.
 hl.env("LIBVA_DRIVER_NAME", "nvidia")
 hl.env("NVD_BACKEND", "direct")
-
--- Firefox runs the decoder inside its RDD process, whose sandbox blocks the
--- device access libva-nvidia-driver needs. This is a real reduction in Zen's
--- sandboxing, and it is the documented requirement for VA-API on NVIDIA: the
--- media decoder process loses its sandbox, the content processes keep theirs.
--- Drop this line and hardware decoding in Zen stops working.
-hl.env("MOZ_DISABLE_RDD_SANDBOX", "1")

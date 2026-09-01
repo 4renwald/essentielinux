@@ -6,16 +6,10 @@ readonly REPO_ROOT="$(cd -- "${DISTRO_ROOT}/../.." && pwd)"
 source "${REPO_ROOT}/lib/common.sh"
 
 # Everything module 50 could not deploy as a static file, because it depends on
-# a path only this machine knows: where pacman put the shader pack, where the
-# ff2mpv host binary landed, and which Zen profiles exist.
+# a path only this machine knows: where pacman put the shader pack.
 
 readonly MPV_CONFIG_DIR="${HOME}/.config/mpv"
 readonly SHADER_LINK="${MPV_CONFIG_DIR}/shaders"
-readonly ZEN_CONFIG_ROOT="${XDG_CONFIG_HOME:-${HOME}/.config}/zen"
-readonly ZEN_LEGACY_ROOT="${HOME}/.zen"
-readonly NATIVE_HOST_DIR="${HOME}/.mozilla/native-messaging-hosts"
-readonly PREF_BEGIN='// >>> workstation video decoding >>>'
-readonly PREF_END='// <<< workstation video decoding <<<'
 
 require_command mpv
 require_command pacman
@@ -89,124 +83,3 @@ if grep -Eq 'Error parsing|option not found' <<< "${mpv_output}"; then
   die "mpv rejected its own configuration: ${mpv_output//$'\n'/; }"
 fi
 log_success "mpv parses mpv.conf and input.conf without errors."
-
-log_step "Authorising the ff2mpv native messaging host"
-ff2mpv_binary="$(command -v ff2mpv-rust 2>/dev/null || command -v ff2mpv 2>/dev/null || true)"
-if [[ -z ${ff2mpv_binary} ]]; then
-  log_warn "No ff2mpv host binary is installed, so the browser add-on has nothing to talk to. Run ./install.sh 25 to install ff2mpv-rust."
-else
-  if path_has_symlink "${NATIVE_HOST_DIR}"; then
-    die "Refusing to write through a symlinked native messaging directory: ${NATIVE_HOST_DIR}"
-  fi
-  # Zen reads Firefox's own ~/.mozilla/native-messaging-hosts rather than a
-  # directory of its own (zen-browser/desktop#10622), so the manifest goes here
-  # even though Zen is the browser that consumes it. Writing it here rather
-  # than relying on wherever the AUR package placed it also keeps this working
-  # if that package installs only a system-wide copy Zen does not read.
-  install -d "${NATIVE_HOST_DIR}"
-  manifest_temp="$(mktemp "${TMPDIR:-/tmp}/workstation-ff2mpv-XXXXXX")"
-  cat > "${manifest_temp}" <<EOF
-{
-    "name": "ff2mpv",
-    "description": "ff2mpv native messaging host. Managed by workstation; reapply with ./install.sh 52.",
-    "path": "${ff2mpv_binary}",
-    "type": "stdio",
-    "allowed_extensions": ["ff2mpv@yossarian.net"]
-}
-EOF
-  install --mode=0644 "${manifest_temp}" "${NATIVE_HOST_DIR}/ff2mpv.json"
-  rm -f -- "${manifest_temp}"
-  log_success "${NATIVE_HOST_DIR}/ff2mpv.json points at ${ff2mpv_binary}."
-  log_warn "The add-on itself is not installable from here: get it from https://addons.mozilla.org/firefox/addon/ff2mpv/ in Zen."
-fi
-
-log_step "Enabling hardware video decoding in Zen"
-zen_root=''
-for candidate in "${ZEN_CONFIG_ROOT}" "${ZEN_LEGACY_ROOT}"; do
-  if [[ -r ${candidate}/profiles.ini ]]; then
-    zen_root=${candidate}
-    break
-  fi
-done
-if [[ -z ${zen_root} ]]; then
-  log_warn "No Zen profile root exists yet (${ZEN_CONFIG_ROOT} or ${ZEN_LEGACY_ROOT}), so Zen has no profile to configure. Start Zen once, then rerun ./install.sh 52."
-  log_success "Video pipeline configured apart from Zen's preferences."
-  exit 0
-fi
-if path_has_symlink "${zen_root}"; then
-  die "Refusing to write through a symlinked Zen directory: ${zen_root}"
-fi
-
-profiles_ini="${zen_root}/profiles.ini"
-[[ -r ${profiles_ini} ]] \
-  || die "${profiles_ini} is missing, so the Zen profiles cannot be identified. Start Zen once, then rerun ./install.sh 52."
-
-# profiles.ini is the only reliable list: a profile directory is named with a
-# random prefix, and stale directories from removed profiles stay on disk.
-mapfile -t zen_profiles < <(awk -v root="${zen_root}" '
-  function flush() {
-    if (path != "") { print (relative == "0" ? path : root "/" path) }
-    path = ""; relative = "1"
-  }
-  { sub(/\r$/, "") }
-  /^\[/ { flush(); next }
-  /^[[:space:]]*Path[[:space:]]*=/ { sub(/^[^=]*=/, ""); path = $0; next }
-  /^[[:space:]]*IsRelative[[:space:]]*=/ { sub(/^[^=]*=/, ""); relative = $0; next }
-  END { flush() }
-' "${profiles_ini}")
-
-[[ ${#zen_profiles[@]} -gt 0 ]] \
-  || die "No profile paths were found in ${profiles_ini}."
-
-# media.hardware-video-decoding.force-enabled is the pref that matters: Firefox
-# has shipped VA-API on by default since 137, but it still refuses to use it on
-# the NVIDIA stack unless it is forced. media.rdd-ffmpeg.enabled keeps the
-# decoder in the RDD process, which is the process MOZ_DISABLE_RDD_SANDBOX
-# unsandboxes in hypr-user.lua -- the two settings only work as a pair.
-readonly -a ZEN_PREFS=(
-  'user_pref("media.hardware-video-decoding.force-enabled", true);'
-  'user_pref("media.ffmpeg.vaapi.enabled", true);'
-  'user_pref("media.rdd-ffmpeg.enabled", true);'
-)
-
-configured_profiles=0
-for profile in "${zen_profiles[@]}"; do
-  if [[ ! -d ${profile} ]]; then
-    log_warn "${profiles_ini} lists a profile directory that does not exist: ${profile}"
-    continue
-  fi
-  if path_has_symlink "${profile}"; then
-    log_warn "Skipping a Zen profile reached through a symlink: ${profile}"
-    continue
-  fi
-
-  user_js="${profile}/user.js"
-  profile_temp="$(mktemp "${TMPDIR:-/tmp}/workstation-zen-userjs-XXXXXX")"
-  if [[ -f ${user_js} ]]; then
-    awk -v begin="${PREF_BEGIN}" -v end="${PREF_END}" '
-      $0 == begin { managed = 1; next }
-      $0 == end { managed = 0; next }
-      !managed { print }
-    ' < "${user_js}" > "${profile_temp}"
-  else
-    : > "${profile_temp}"
-  fi
-  {
-    printf '%s\n' "${PREF_BEGIN}"
-    printf '%s\n' "${ZEN_PREFS[@]}"
-    printf '%s\n' "${PREF_END}"
-  } >> "${profile_temp}"
-
-  if [[ -f ${user_js} ]] && cmp -s -- "${profile_temp}" "${user_js}"; then
-    rm -f -- "${profile_temp}"
-  else
-    install --mode=0644 "${profile_temp}" "${user_js}"
-    rm -f -- "${profile_temp}"
-  fi
-  configured_profiles=$((configured_profiles + 1))
-done
-
-[[ ${configured_profiles} -gt 0 ]] \
-  || die "None of the profiles listed in ${profiles_ini} could be configured."
-
-log_success "Hardware decoding preferences written to ${configured_profiles} Zen profile(s). Restart Zen, then confirm at about:support that the media decoder reports VA-API."

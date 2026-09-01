@@ -17,7 +17,8 @@ log_step 'Enabling required Fedora and official vendor repositories'
 as_root dnf -y install dnf5-plugins flatpak
 as_root dnf -y copr enable lionheartp/Hyprland
 as_root dnf -y copr enable scottames/ghostty
-as_root dnf -y copr enable imput/helium
+as_root dnf config-manager addrepo --overwrite \
+  --from-repofile='https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo'
 
 deploy_system_file "${DISTRO_ROOT}/etc/yum.repos.d/vscodium.repo" /etc/yum.repos.d/vscodium.repo
 deploy_system_file "${DISTRO_ROOT}/etc/yum.repos.d/claude-code.repo" /etc/yum.repos.d/claude-code.repo
@@ -27,4 +28,4 @@ as_root dnf config-manager addrepo --overwrite \
 as_root flatpak remote-add --system --if-not-exists flathub \
   'https://dl.flathub.org/repo/flathub.flatpakrepo'
 
-log_success 'RPM Fusion, Hyprland/Ghostty/Helium COPRs, vendor RPM repositories, and Flathub are enabled.'
+log_success 'RPM Fusion, Hyprland/Ghostty COPRs, the Brave repository, vendor RPM repositories, and Flathub are enabled.'

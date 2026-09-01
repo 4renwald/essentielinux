@@ -5,13 +5,11 @@ chatgpt-desktop :: ChatGPT desktop client
 claude-code :: Claude Code CLI
 opencode-desktop-bin :: graphical OpenCode client, alongside the opencode CLI
 bibata-cursor-theme-bin :: Bibata Modern Classic cursor
-helium-browser-bin :: default Chromium-based browser with VA-API flags
+brave-origin-bin :: Brave Origin browser, the system's Chromium-based browser
 equibop-bin :: Equibop Discord client
 spotify :: Spotify client
 spicetify-cli :: Spicetify CLI
 keeper-password-manager :: Keeper password manager
-zen-browser-bin :: secondary Firefox-based browser with the Caelestia theme
-ff2mpv-rust :: native messaging host handing page URLs to mpv
 hyprmod :: GTK4 settings app for Hyprland (writes are treated as drift)
 protonplus :: installs and updates compatibility tools into Steam's directory
 vkbasalt :: Vulkan post-processing used by GOverlay

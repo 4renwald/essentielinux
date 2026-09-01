@@ -53,12 +53,6 @@ readonly STATE_HOME="${XDG_STATE_HOME:-${HOME}/.local/state}"
 readonly SPOTIFY_PREFS_FILE="${CONFIG_HOME}/spotify/prefs"
 readonly SPICETIFY_THEME_DIR="${CONFIG_HOME}/spicetify/Themes/caelestia"
 readonly SPICETIFY_BACKUP_DIR="${STATE_HOME}/spicetify/Backup"
-readonly ZEN_CONFIG_ROOT="${CONFIG_HOME}/zen"
-readonly ZEN_LEGACY_ROOT="${HOME}/.zen"
-readonly ZEN_THEME_BEGIN='// >>> workstation Caelestia Zen theme >>>'
-readonly ZEN_THEME_END='// <<< workstation Caelestia Zen theme >>>'
-readonly ZEN_CAELESTIAFOX_ID='caelestiafox@caelestia.org'
-readonly ZEN_CAELESTIAFOX_URL='https://addons.mozilla.org/firefox/downloads/latest/caelestiafox/latest.xpi'
 
 readonly HYPR_MAIN_CONFIG="${HYPR_CONFIG_DIR}/hyprland.lua"
 readonly HYPR_EXECS_CONFIG="${HYPR_CONFIG_DIR}/hyprland/execs.lua"
@@ -171,9 +165,6 @@ caelestia_integration_selected() {
       caelestia_package_selected aur spotify \
         && caelestia_package_selected aur spicetify-cli
       ;;
-    zen)
-      caelestia_package_selected aur zen-browser-bin
-      ;;
     *)
       return 1
       ;;
@@ -202,9 +193,6 @@ caelestia_component_is_app_default() {
       ;;
     discord)
       caelestia_package_selected aur equibop-bin
-      ;;
-    zen)
-      caelestia_package_selected aur zen-browser-bin
       ;;
     *)
       return 1
@@ -387,215 +375,11 @@ activate_spicetify_theme() {
   log_success 'Spotify: Spicetify is using Caelestia.'
 }
 
-zen_distribution_dir() {
-  local package policy_dir launcher launch_target
-  package="$(pacman -Qq 2>/dev/null | awk '/^zen-browser(-bin)?$/ { print; exit }')"
-  if [[ -n ${package} ]]; then
-    policy_dir="$(pacman -Ql "${package}" 2>/dev/null \
-      | awk '$2 ~ /\/distribution\/policies[.]json$/ { sub(/\/policies[.]json$/, "", $2); print $2; exit }')"
-    [[ -n ${policy_dir} ]] && { printf '%s\n' "${policy_dir}"; return 0; }
-  fi
-
-  launcher="$(command -v zen-browser 2>/dev/null || true)"
-  if [[ -f ${launcher} ]]; then
-    launch_target="$(awk '$1 == "exec" { print $2; exit }' "${launcher}")"
-    if [[ ${launch_target} == /* && -d $(dirname -- "${launch_target}")/distribution ]]; then
-      printf '%s\n' "$(dirname -- "${launch_target}")/distribution"
-      return 0
-    fi
-  fi
-  return 1
-}
-
-install_caelestiafox_native_host() {
-  local package_dir="${CAELESTIA_DOTS_DIR}/packages/caelestia-firefox-theme"
-  local pkgbuild="${package_dir}/PKGBUILD"
-  local manifest_dir="${HOME}/.mozilla/native-messaging-hosts"
-  local manifest_temp
-  [[ -f ${pkgbuild} ]] \
-    || die "Caelestia's native browser theme package is missing: ${pkgbuild}"
-  if [[ ! -x /usr/lib/caelestia/caelestiafox ]]; then
-    log_step 'Installing CaelestiaFox native messaging support for Zen'
-    # paru -B takes the directory containing the PKGBUILD, not the PKGBUILD
-    # itself: handed the file it appends /.SRCINFO to it and fails with
-    # "Not a directory".
-    paru -Bi --noconfirm "${package_dir}" \
-      || die 'The CaelestiaFox native messaging package could not be built.'
-  fi
-  [[ -x /usr/lib/caelestia/caelestiafox ]] \
-    || die 'CaelestiaFox native messaging support is missing after package installation.'
-
-  # Zen follows Firefox's per-user native-host directory. Keep a user-level
-  # manifest alongside the package's system manifest so the browser finds the
-  # bridge regardless of which native-messaging search path this build uses.
-  path_has_symlink "${manifest_dir}" \
-    && die "Refusing to write through a symlinked native messaging directory: ${manifest_dir}"
-  install -d "${manifest_dir}"
-  manifest_temp="$(mktemp "${TMPDIR:-/tmp}/workstation-caelestiafox-manifest-XXXXXX")"
-  cat > "${manifest_temp}" <<EOF
-{
-    "name": "caelestiafox",
-    "description": "Native app for the CaelestiaFox theme. Managed by essentielinux.",
-    "path": "/usr/lib/caelestia/caelestiafox",
-    "type": "stdio",
-    "allowed_extensions": ["${ZEN_CAELESTIAFOX_ID}"]
-}
-EOF
-  install --mode=0644 "${manifest_temp}" "${manifest_dir}/caelestiafox.json"
-  rm -f -- "${manifest_temp}"
-}
-
-install_zen_caelestia_policy() {
-  local distribution_dir=$1 policy_file policy_tmp
-  policy_file="${distribution_dir}/policies.json"
-  policy_tmp="$(mktemp "${TMPDIR:-/tmp}/workstation-caelestia-zen-policy-XXXXXX")"
-
-  if [[ -f ${policy_file} ]]; then
-    jq -e 'type == "object"' "${policy_file}" >/dev/null \
-      || die "Zen's policy file is not a JSON object: ${policy_file}"
-    cp -- "${policy_file}" "${policy_tmp}"
-  else
-    printf '{"policies":{}}\n' > "${policy_tmp}"
-  fi
-
-  jq --arg id "${ZEN_CAELESTIAFOX_ID}" --arg url "${ZEN_CAELESTIAFOX_URL}" \
-    '.policies = (if (.policies | type) == "object" then .policies else {} end)
-     | .policies.ExtensionSettings = (if (.policies.ExtensionSettings | type) == "object" then .policies.ExtensionSettings else {} end)
-     | .policies.ExtensionSettings[$id] = {installation_mode: "force_installed", install_url: $url}' \
-    "${policy_tmp}" > "${policy_tmp}.new" \
-    || die "Unable to add CaelestiaFox to ${policy_file}."
-  install --mode=0644 "${policy_tmp}.new" "${policy_tmp}"
-  rm -f -- "${policy_tmp}.new"
-  deploy_system_file "${policy_tmp}" "${policy_file}"
-  rm -f -- "${policy_tmp}"
-  log_success "Zen will force-install CaelestiaFox from Mozilla Add-ons."
-}
-
-create_zen_profile_root() {
-  local launcher pid tries
-  local -a zen_roots=()
-  mapfile -t zen_roots < <(zen_profile_roots)
-  ((${#zen_roots[@]} > 0)) && return 0
-  launcher="$(command -v zen-browser 2>/dev/null || true)"
-  if [[ -z ${launcher} ]]; then
-    log_warn 'Zen is enabled but its launcher is unavailable; its profile theme will be applied on the first Zen start.'
-    return 1
-  fi
-
-  log_step 'Creating Zen profiles so the Caelestia theme is ready on first launch'
-  MOZ_NO_REMOTE=1 "${launcher}" --headless --no-remote about:blank \
-    >/dev/null 2>&1 &
-  pid=$!
-  for ((tries = 0; tries < 60; tries++)); do
-    mapfile -t zen_roots < <(zen_profile_roots)
-    ((${#zen_roots[@]} > 0)) && break
-    kill -0 "${pid}" 2>/dev/null || break
-    sleep 0.5
-  done
-  kill "${pid}" 2>/dev/null || true
-  wait "${pid}" 2>/dev/null || true
-  mapfile -t zen_roots < <(zen_profile_roots)
-  if ((${#zen_roots[@]} > 0)); then
-    log_success 'Zen profile created.'
-    return 0
-  fi
-  log_warn 'Zen did not create a profile in headless mode; start it once to create one, then the managed theme will be picked up.'
-  return 1
-}
-
-zen_profile_roots() {
-  local root
-  for root in "${ZEN_CONFIG_ROOT}" "${ZEN_LEGACY_ROOT}"; do
-    [[ -f ${root}/profiles.ini ]] && printf '%s\n' "${root}"
-  done
-}
-
-zen_profile_paths() {
-  local profiles_ini=$1 root=$2
-  awk -v root="${root}" '
-    function flush() {
-      if (path != "") { print (relative == "0" ? path : root "/" path) }
-      path = ""; relative = "1"
-    }
-    { sub(/\r$/, "") }
-    /^\[/ { flush(); next }
-    /^[[:space:]]*Path[[:space:]]*=/ { sub(/^[^=]*=/, ""); path = $0; next }
-    /^[[:space:]]*IsRelative[[:space:]]*=/ { sub(/^[^=]*=/, ""); relative = $0; next }
-    END { flush() }
-  ' "${profiles_ini}"
-}
-
-deploy_zen_caelestia_theme() {
-  local source_css=$1 root=$2 profile css_temp user_js user_temp
-  local configured=0
-  [[ -f ${source_css} ]] \
-    || die "Caelestia's Zen stylesheet is missing: ${source_css}"
-
-  css_temp="$(mktemp "${TMPDIR:-/tmp}/workstation-caelestia-zen-css-XXXXXX")"
-  awk '
-    NR == 1 && $0 == "/*:root {" { sub(/^\/[\*]/, ""); open = 1 }
-    open && $0 == "}*/" { sub(/\*\/$/, ""); open = 0 }
-    { print }
-  ' "${source_css}" > "${css_temp}"
-  grep -Fqx ':root {' "${css_temp}" \
-    || die 'Caelestia changed its Zen stylesheet layout; refusing to deploy an unthemed profile.'
-
-  while IFS= read -r profile; do
-    [[ -d ${profile} ]] || { log_warn "Zen lists a missing profile: ${profile}"; continue; }
-    path_has_symlink "${profile}" && { log_warn "Skipping symlinked Zen profile: ${profile}"; continue; }
-    path_has_symlink "${profile}/chrome" && { log_warn "Skipping Zen profile with a symlinked chrome directory: ${profile}"; continue; }
-    install -d "${profile}/chrome"
-    install --mode=0644 "${css_temp}" "${profile}/chrome/userChrome.css"
-
-    user_js="${profile}/user.js"
-    user_temp="$(mktemp "${TMPDIR:-/tmp}/workstation-caelestia-zen-userjs-XXXXXX")"
-    if [[ -f ${user_js} ]]; then
-      awk -v begin="${ZEN_THEME_BEGIN}" -v end="${ZEN_THEME_END}" '
-        $0 == begin { managed = 1; next }
-        $0 == end { managed = 0; next }
-        !managed { print }
-      ' "${user_js}" > "${user_temp}"
-    else
-      : > "${user_temp}"
-    fi
-    {
-      printf '%s\n' "${ZEN_THEME_BEGIN}"
-      printf '%s\n' 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);'
-      printf '%s\n' "${ZEN_THEME_END}"
-    } >> "${user_temp}"
-    install --mode=0644 "${user_temp}" "${user_js}"
-    rm -f -- "${user_temp}"
-    configured=$((configured + 1))
-  done < <(zen_profile_paths "${root}/profiles.ini" "${root}")
-
-  rm -f -- "${css_temp}"
-  if ((configured == 0)); then
-    log_warn 'Zen has no existing profile to theme yet; its policy and native bridge are ready for the first launch.'
-    return 1
-  fi
-  log_success "Caelestia's Zen stylesheet enabled in ${configured} profile(s)."
-}
-
-activate_zen_theme() {
-  local distribution_dir root
-  local -a zen_roots=()
-  install_caelestiafox_native_host
-  distribution_dir="$(zen_distribution_dir)" \
-    || die 'Could not locate Zen’s distribution directory for the CaelestiaFox policy.'
-  install_zen_caelestia_policy "${distribution_dir}"
-  create_zen_profile_root || return 0
-  mapfile -t zen_roots < <(zen_profile_roots)
-  for root in "${zen_roots[@]}"; do
-    deploy_zen_caelestia_theme "${CAELESTIA_DOTS_DIR}/zen/userChrome.css" "${root}" || true
-  done
-}
-
 activate_caelestia_integration() {
   case $1 in
     vscode | vscodium) activate_editor_theme "$1" ;;
     discord) activate_equibop_theme ;;
     spotify) activate_spicetify_theme ;;
-    zen) activate_zen_theme ;;
     *) die "Unknown Caelestia integration: $1" ;;
   esac
 }
@@ -608,7 +392,7 @@ activate_caelestia_integrations() {
   local integration
   local -a failed=()
 
-  for integration in vscode vscodium discord spotify zen; do
+  for integration in vscode vscodium discord spotify; do
     caelestia_integration_selected "${integration}" || continue
     ( activate_caelestia_integration "${integration}" ) || failed+=("${integration}")
   done
@@ -790,7 +574,7 @@ log_warn "This step is interactive: answer the prompts. Building Quickshell take
 # leaves the machine without a uwsm-managed Hyprland session. The optional
 # set is therefore picked in the local menu (uwsm pinned as required) and
 # passed explicitly. firefox stays the one default turned off: this system
-# uses Zen.
+# uses Brave Origin.
 #
 # Older caelestia-cli releases have no component flags at all, so fall back
 # to the fully interactive form rather than dying on an argument error.

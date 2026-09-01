@@ -10,7 +10,7 @@ This is my installer for Fedora and Arch machines. It detects the distro, then s
 | --- | --- |
 | Hyprland + Noctalia | Hyprland + Caelestia |
 | Ghostty themed by Noctalia | Ghostty themed by Caelestia |
-| Helium, Equibop, VSCodium, Nextcloud, qBittorrent | Helium, Equibop, VS Code, Nextcloud, qBittorrent |
+| Brave Origin, Equibop, VSCodium, Nextcloud, qBittorrent | Brave Origin, Equibop, VS Code, Nextcloud, qBittorrent |
 | PipeWire, gaming, printing, Snapper on btrfs | PipeWire, gaming, AUR tools, Snapper on btrfs |
 
 ## 🚀 Quick start

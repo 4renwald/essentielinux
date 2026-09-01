@@ -28,7 +28,7 @@ MODULE_HINTS=(
   'greetd, the sysc-greet niri session, and the greeter account'
   'Caelestia shell installer, wallpapers, and managed overrides'
   'Copy Hyprland, terminal, and agent configuration into ~'
-  'mpv shaders, the ff2mpv host, and Zen decoding preferences'
+  'mpv shaders and the shader pack link'
   'Limine bootloader palette and named firmware entry'
 )
 

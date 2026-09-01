@@ -140,15 +140,6 @@ if feature_enabled shaders; then
   fi
 fi
 
-if feature_enabled ff2mpv; then
-  log_step 'Installing the ff2mpv native messaging host'
-  ff2mpv_url="$(github_asset_url ryze312/ff2mpv-rust '^ff2mpv-rust-x86_64-unknown-linux-musl$')" \
-    || die 'Unable to find the official ff2mpv-rust x86_64 release.'
-  download "${ff2mpv_url}" "${WORK_DIR}/ff2mpv-rust"
-  install --mode=0755 "${WORK_DIR}/ff2mpv-rust" "${HOME}/.local/bin/ff2mpv-rust"
-  log_success "Installed ff2mpv-rust to ${HOME}/.local/bin."
-fi
-
 if feature_enabled flatpaks; then
   log_step 'Installing the approved Flathub applications'
   read_manifest "${DISTRO_ROOT}/packages/flatpaks.txt"

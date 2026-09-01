@@ -105,7 +105,7 @@ bind("CTRL + SHIFT + Escape", "hyprctl dispatch exec '[workspace special:sysmon 
 
 -- Applications.
 bind("SUPER + T", "ghostty", "Terminal (ghostty)")
-bind("SUPER + W", "helium", "Browser (Helium)")
+bind("SUPER + W", "brave-origin", "Browser (Brave Origin)")
 bind("SUPER + C", "codium", "Editor (VSCodium)")
 bind("SUPER + E", "thunar", "File explorer (Thunar)")
 bind("CTRL + ALT + V", "pavucontrol", "Audio settings (pavucontrol)")

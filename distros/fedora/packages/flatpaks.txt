@@ -2,7 +2,6 @@
 org.signal.Signal :: Signal messenger
 io.github.equicord.equibop :: Equibop Discord client
 md.obsidian.Obsidian :: Obsidian notes
-app.zen_browser.zen :: Zen browser
 com.spotify.Client :: Spotify music
 com.vysp3r.ProtonPlus :: ProtonPlus (Proton manager)
 io.github.radiolamp.mangojuice :: MangoJuice (MangoHud config GUI)

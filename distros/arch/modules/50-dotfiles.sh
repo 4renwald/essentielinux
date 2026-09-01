@@ -109,35 +109,6 @@ if command -v xdg-user-dirs-update >/dev/null 2>&1; then
   xdg-user-dirs-update
 fi
 
-# hypr-vars.lua tells Caelestia's keybinding to launch helium-browser, so the
-# xdg-open default must agree with it: everything that opens a link without a
-# keybind -- Discord, Obsidian, VS Code -- reads mimeapps.list instead, and
-# without this the "default browser" is whatever xdg-open happens to resolve
-# first. The desktop entry is discovered rather than hardcoded: the AUR
-# package's entry name is not stable enough to guess, and naming a missing
-# entry would break xdg-open rather than fix it.
-log_step "Registering the default browser"
-if ! command -v xdg-settings >/dev/null 2>&1; then
-  log_warn "xdg-settings is unavailable; the default browser was not registered. Run ./install.sh 10 first."
-else
-  helium_desktop_entry=''
-  while IFS= read -r -d '' desktop_file; do
-    grep -Eq '^MimeType=.*x-scheme-handler/https' "${desktop_file}" || continue
-    grep -Eq '^Exec=(.*/)?helium' "${desktop_file}" || continue
-    helium_desktop_entry="${desktop_file##*/}"
-    break
-  done < <(find /usr/share/applications "${XDG_DATA_HOME:-${HOME}/.local/share}/applications" \
-    -maxdepth 1 -name '*.desktop' -print0 2>/dev/null | sort -z)
-
-  if [[ -z ${helium_desktop_entry} ]]; then
-    log_warn "No Helium desktop entry handling https was found; the default browser is unchanged. Run ./install.sh 25 to install helium-browser-bin."
-  elif xdg-settings set default-web-browser "${helium_desktop_entry}"; then
-    log_success "Default browser set to ${helium_desktop_entry}."
-  else
-    log_warn "xdg-settings rejected ${helium_desktop_entry}; the default browser is unchanged."
-  fi
-fi
-
 # Caelestia themes terminals through its fish config, which replays the active
 # scheme's escape sequences at every interactive start. A terminal that launches
 # any other shell keeps its own default palette, so fish has to be the login

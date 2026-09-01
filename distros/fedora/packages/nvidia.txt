@@ -8,7 +8,7 @@
 xorg-x11-drv-nvidia-libs.i686 :: 32-bit NVIDIA libraries for games
 xorg-x11-drv-nvidia-cuda :: CUDA/NVENC libraries and nvidia-smi
 xorg-x11-drv-nvidia-power :: suspend/resume systemd units
-libva-nvidia-driver :: VA-API support for Firefox and Zen
+libva-nvidia-driver :: VA-API support for Brave on NVIDIA
 mesa-demos :: OpenGL diagnostics
 vulkan-tools :: Vulkan diagnostics
 libva-utils :: VA-API diagnostics

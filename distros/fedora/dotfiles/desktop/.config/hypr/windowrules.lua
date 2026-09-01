@@ -56,7 +56,7 @@ hl.window_rule({ match = { class = "^steam$", title = "^$" }, no_shadow = true }
 
 for _, class in ipairs({
     "^(.*mpv.*|.*vlc.*|.*Spotify.*|steam_app_.*)$",
-    "^(.*brave-browser.*|.*zen.*)$",
+    "^(.*brave-browser.*|.*brave-origin.*)$",
 }) do
     hl.window_rule({ match = { class = class }, idle_inhibit = "fullscreen" })
 end
@@ -94,7 +94,7 @@ hl.window_rule({
 for _, class in ipairs({
     "^VSCodium$", "^[Cc]odium$", "^codium-url-handler$", "^com\\.mitchellh\\.ghostty$",
     "^thunar$", "^[Ss]team$", "^steamwebhelper$", "^[Ss]potify$",
-    "^discord$", "^Signal$", "^brave-browser$", "^zen.*$",
+    "^discord$", "^Signal$", "^brave-browser$", "^brave-origin$",
 }) do
     hl.window_rule({ match = { class = class }, opacity = 1.0 })
 end

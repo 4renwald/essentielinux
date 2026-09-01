@@ -30,7 +30,7 @@ MODULE_HINTS=(
   'Clone the managed wallpaper collection'
   'zram, VM tunables, services, Snapper, and the Fish login shell'
   'Deploy Hyprland, Noctalia, Ghostty, and terminal configuration'
-  'mpv shaders, the ff2mpv host, and Zen decoding preferences'
+  'mpv shaders and the shader pack link'
   'greetd and the Noctalia Greeter login screen'
 )
 

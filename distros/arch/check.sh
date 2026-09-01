@@ -58,9 +58,9 @@ deployed_hypr_file_matches() {
 }
 
 log_step "Essential commands"
-for command in paru Hyprland start-hyprland qs caelestia jq ghostty fuzzel zen-browser helium-browser gh glab wpctl grim slurp wl-copy cliphist lspci steam gamescope goverlay mangohud gamemoderun vulkaninfo vainfo zramctl \
+for command in paru Hyprland start-hyprland qs caelestia jq ghostty fuzzel brave-origin gh glab wpctl grim slurp wl-copy cliphist lspci steam gamescope goverlay mangohud gamemoderun vulkaninfo vainfo zramctl \
   mpv yt-dlp \
-  gammastep notify-send gnome-keyring-daemon trash-empty dconf xdg-settings man protontricks vm-curator qemu-system-x86_64 \
+  gammastep notify-send gnome-keyring-daemon trash-empty dconf man protontricks vm-curator qemu-system-x86_64 \
   claude codex opencode opencode-desktop code \
   sysc-greet niri kitty; do
   check_command "${command}"
@@ -154,10 +154,10 @@ else
   fail "${caelestia_conf}/hypr-vars.lua does not move kbShowPanels, so SUPER + K is bound twice. Run ./install.sh 50."
 fi
 
-if grep -Eq 'browser[[:space:]]*=[[:space:]]*"helium-browser"' "${caelestia_conf}/hypr-vars.lua" 2>/dev/null; then
-  pass "Caelestia's browser keybind launches Helium, the default browser."
+if grep -Eq 'browser[[:space:]]*=[[:space:]]*"brave-origin"' "${caelestia_conf}/hypr-vars.lua" 2>/dev/null; then
+  pass "Caelestia's browser keybind launches Brave Origin."
 else
-  fail "${caelestia_conf}/hypr-vars.lua does not point Caelestia's browser keybind at helium-browser. Run ./install.sh 50."
+  fail "${caelestia_conf}/hypr-vars.lua does not point Caelestia's browser keybind at brave-origin. Run ./install.sh 50."
 fi
 
 log_step "Proton builds"
@@ -456,46 +456,6 @@ if caelestia_component_enabled spotify \
     pass 'Spicetify is using the Caelestia theme.'
   fi
 fi
-if caelestia_component_enabled zen || pacman -Q zen-browser-bin >/dev/null 2>&1; then
-  if [[ -x /usr/lib/caelestia/caelestiafox ]] \
-    && [[ -f ${HOME}/.mozilla/native-messaging-hosts/caelestiafox.json ]]; then
-    pass 'CaelestiaFox native messaging is available for Zen.'
-  else
-    fail 'CaelestiaFox native messaging is missing for Zen. Run ./install.sh 45.'
-  fi
-  zen_profile_roots=()
-  for zen_root in "${XDG_CONFIG_HOME:-${HOME}/.config}/zen" "${HOME}/.zen"; do
-    [[ -r ${zen_root}/profiles.ini ]] && zen_profile_roots+=("${zen_root}")
-  done
-  zen_theme_profiles=0
-  for zen_root in "${zen_profile_roots[@]}"; do
-    profiles_ini="${zen_root}/profiles.ini"
-    mapfile -t zen_theme_profile_paths < <(awk -v root="${zen_root}" '
-      function flush() {
-        if (path != "") { print (relative == "0" ? path : root "/" path) }
-        path = ""; relative = "1"
-      }
-      { sub(/\r$/, "") }
-      /^\[/ { flush(); next }
-      /^[[:space:]]*Path[[:space:]]*=/ { sub(/^[^=]*=/, ""); path = $0; next }
-      /^[[:space:]]*IsRelative[[:space:]]*=/ { sub(/^[^=]*=/, ""); relative = $0; next }
-      END { flush() }
-    ' "${profiles_ini}")
-    for zen_theme_profile in "${zen_theme_profile_paths[@]}"; do
-      if [[ -f ${zen_theme_profile}/chrome/userChrome.css ]] \
-        && grep -Fqx ':root {' "${zen_theme_profile}/chrome/userChrome.css" \
-        && grep -Fq 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);' \
-          "${zen_theme_profile}/user.js" 2>/dev/null; then
-        zen_theme_profiles=$((zen_theme_profiles + 1))
-      fi
-    done
-  done
-  if ((zen_theme_profiles > 0)); then
-    pass "Caelestia's Zen stylesheet is enabled in ${zen_theme_profiles} profile(s)."
-  else
-    warn 'Zen has no themed profile yet; start Zen once and rerun ./install.sh 45.'
-  fi
-fi
 
 caelestia_tree_ok=true
 caelestia_tree_error=''
@@ -778,43 +738,11 @@ else
   fail "${mpv_config_dir}/mpv.conf is missing. Run ./install.sh 50."
 fi
 
-# The manifest is what lets the ff2mpv add-on start the host process. Zen reads
-# Firefox's directory rather than one of its own, so this path is correct even
-# though no Firefox is installed.
-ff2mpv_manifest="${HOME}/.mozilla/native-messaging-hosts/ff2mpv.json"
-if [[ ! -f ${ff2mpv_manifest} ]]; then
-  fail "Missing ff2mpv native messaging manifest: ${ff2mpv_manifest}. Run ./install.sh 52."
-elif ! command -v jq >/dev/null 2>&1; then
-  warn "jq is unavailable, so ${ff2mpv_manifest} was not validated."
-else
-  ff2mpv_host="$(jq -er '.path' "${ff2mpv_manifest}" 2>/dev/null || true)"
-  ff2mpv_allowed="$(jq -er '.allowed_extensions | index("ff2mpv@yossarian.net")' "${ff2mpv_manifest}" 2>/dev/null || true)"
-  if [[ -n ${ff2mpv_host} && -x ${ff2mpv_host} && ${ff2mpv_allowed} != null && -n ${ff2mpv_allowed} ]]; then
-    pass "The ff2mpv manifest authorises the add-on and points at ${ff2mpv_host}."
-  else
-    fail "${ff2mpv_manifest} does not name an executable host authorised for ff2mpv@yossarian.net. Run ./install.sh 52."
-  fi
-fi
-
-# The add-on cannot be installed by this repository, so its absence is a warning
-# rather than a failure: everything else here still works from the command line.
-zen_root=''
-for candidate in "${XDG_CONFIG_HOME:-${HOME}/.config}/zen" "${HOME}/.zen"; do
-  if [[ -r ${candidate}/profiles.ini ]]; then
-    zen_root=${candidate}
-    break
-  fi
-done
-if [[ -n ${zen_root} && -d ${zen_root} ]] \
-  && ! find "${zen_root}" -maxdepth 3 -name 'ff2mpv@yossarian.net*' -print -quit 2>/dev/null | grep -q .; then
-  warn "The ff2mpv add-on does not appear to be installed in Zen. Get it from https://addons.mozilla.org/firefox/addon/ff2mpv/ ; the native host is ready for it."
-fi
-
 log_step "Browser hardware decoding"
 # hypr-user.lua sets these through hl.env, so a check.sh run from a terminal
 # inside the session sees exactly what a browser launched from the session sees.
 if [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]]; then
-  for variable in LIBVA_DRIVER_NAME:nvidia NVD_BACKEND:direct MOZ_DISABLE_RDD_SANDBOX:1; do
+  for variable in LIBVA_DRIVER_NAME:nvidia NVD_BACKEND:direct; do
     variable_name=${variable%%:*}
     variable_expected=${variable#*:}
     if [[ ${!variable_name:-} == "${variable_expected}" ]]; then
@@ -825,67 +753,17 @@ if [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]]; then
   done
   # vainfo is only meaningful with those variables present, since libva will not
   # otherwise load a driver at all. Outside the session it would report a
-  # failure that says nothing about how the browsers are configured.
+  # failure that says nothing about how the browser is configured.
   if command -v vainfo >/dev/null 2>&1; then
     vainfo_output="$(vainfo 2>&1 || true)"
     if grep -qE 'VAProfileH264|VAProfileVP9|VAProfileAV1' <<< "${vainfo_output}"; then
       pass "VA-API reports hardware decode profiles."
     else
-      fail "VA-API exposes no decode profiles, so both browsers will decode video on the CPU: ${vainfo_output//$'\n'/; }"
+      fail "VA-API exposes no decode profiles, so the browser will decode video on the CPU: ${vainfo_output//$'\n'/; }"
     fi
   fi
 else
   warn "Not running inside a Hyprland session, so the browser decoding environment was not checked."
-fi
-
-# Zen needs the preference as well as the environment: Firefox has shipped
-# VA-API on by default since 137 but still declines to use it on NVIDIA unless
-# it is forced.
-if [[ -z ${zen_root} ]]; then
-  warn "No Zen profile root exists yet; start Zen once, then run ./install.sh 52."
-else
-  zen_profiles_ini="${zen_root}/profiles.ini"
-  mapfile -t checked_zen_profiles < <(awk -v root="${zen_root}" '
-    function flush() {
-      if (path != "") { print (relative == "0" ? path : root "/" path) }
-      path = ""; relative = "1"
-    }
-    { sub(/\r$/, "") }
-    /^\[/ { flush(); next }
-    /^[[:space:]]*Path[[:space:]]*=/ { sub(/^[^=]*=/, ""); path = $0; next }
-    /^[[:space:]]*IsRelative[[:space:]]*=/ { sub(/^[^=]*=/, ""); relative = $0; next }
-    END { flush() }
-  ' "${zen_profiles_ini}")
-
-  zen_prefs_ok=true
-  zen_profiles_seen=0
-  for zen_profile in "${checked_zen_profiles[@]}"; do
-    [[ -d ${zen_profile} ]] || continue
-    zen_profiles_seen=$((zen_profiles_seen + 1))
-    if ! grep -Fq 'user_pref("media.hardware-video-decoding.force-enabled", true);' "${zen_profile}/user.js" 2>/dev/null; then
-      fail "Zen profile does not force hardware video decoding: ${zen_profile}/user.js. Run ./install.sh 52."
-      zen_prefs_ok=false
-    fi
-  done
-  if [[ ${zen_profiles_seen} -eq 0 ]]; then
-    warn "${zen_profiles_ini} lists no existing profile directory."
-  elif [[ ${zen_prefs_ok} == true ]]; then
-    pass "All ${zen_profiles_seen} Zen profile(s) force hardware video decoding."
-  fi
-fi
-
-# Helium reads its flags from the file module 50 deploys. The dotfile comparison
-# above already catches drift; this catches the wrapper not reading it at all,
-# which is what happens if the AUR package is replaced by a plain upstream build.
-helium_flags="${HOME}/.config/helium-browser-flags.conf"
-if ! command -v helium-browser >/dev/null 2>&1; then
-  fail "helium-browser is not installed. Run ./install.sh 25."
-elif [[ ! -f ${helium_flags} ]]; then
-  fail "Missing Helium flags file: ${helium_flags}. Run ./install.sh 50."
-elif grep -qF -- '--enable-features=AcceleratedVideoDecodeLinuxGL,VaapiOnNvidiaGPUs' "${helium_flags}"; then
-  pass "Helium is configured for VA-API decoding; confirm it took effect at helium://gpu."
-else
-  fail "${helium_flags} does not enable VA-API decoding. Run ./install.sh 50."
 fi
 
 log_step "Desktop integration"
@@ -901,12 +779,6 @@ if grep -Eq '^[[:space:]]*session[[:space:]]+optional[[:space:]]+pam_gnome_keyri
   pass "greetd unlocks the login keyring through PAM."
 else
   fail "/etc/pam.d/greetd does not unlock the login keyring, so secrets prompt every session. Run ./install.sh 40."
-fi
-
-if default_browser="$(xdg-settings get default-web-browser 2>/dev/null)" && [[ ${default_browser} == *helium* ]]; then
-  pass "The default browser for xdg-open is ${default_browser}."
-else
-  fail "The default browser is '${default_browser:-unset}', not a Helium desktop entry. Run ./install.sh 50."
 fi
 
 for pacman_option in Color VerbosePkgLists ParallelDownloads; do

@@ -13,7 +13,6 @@ local env = {
     "_JAVA_AWT_WM_NONREPARENTING,1",
     "WLR_NO_HARDWARE_CURSORS,1",
     "TERMINAL,ghostty",
-    "BROWSER,helium",
     "EDITOR,codium",
 }
 
@@ -56,8 +55,7 @@ for _, item in ipairs(env) do
 end
 
 -- The greetd session does not carry ~/.local/bin on PATH, which hides every
--- CLI and wrapper the installer places there (codex, opencode, starship,
--- zen-browser, ...).
+-- CLI and wrapper the installer places there (codex, opencode, starship, ...).
 local home = os.getenv("HOME") or ""
 local local_bin = home .. "/.local/bin"
 local session_path = os.getenv("PATH") or ""

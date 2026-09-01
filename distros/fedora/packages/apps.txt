@@ -12,3 +12,4 @@ yt-dlp :: URL resolver mpv's ytdl_hook calls
 qemu-kvm :: QEMU virtual machines, driven by vm-curator
 nextcloud-client :: Nextcloud desktop file-sync client
 qbittorrent :: BitTorrent client
+tailscale :: Tailscale client and tailscaled daemon

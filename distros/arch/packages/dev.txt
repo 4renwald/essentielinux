@@ -1,0 +1,6 @@
+# Language toolchains. uv is the Python entry point: it manages interpreters,
+# virtual environments and project dependencies, so nothing here installs a
+# second package manager beside it.
+python :: Python 3 interpreter
+uv :: Python package, project, and interpreter manager
+go :: Go toolchain

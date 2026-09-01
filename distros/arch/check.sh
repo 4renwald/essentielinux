@@ -804,6 +804,64 @@ else
   warn "The root filesystem is ${root_fstype:-unknown}, not btrfs; this repository only adds pre-upgrade snapshots on btrfs."
 fi
 
+log_step "Toolchains, WinBoat, and Tailscale"
+for toolchain in python uv go; do
+  if selection_is_skipped dev "${toolchain}"; then
+    warn "${toolchain} was deselected for this machine."
+  else
+    check_command "${toolchain}"
+  fi
+done
+
+if pacman -Q winboat-bin >/dev/null 2>&1; then
+  check_command winboat
+  # WinBoat's own startup checks, in the order it runs them: a working docker
+  # socket for this user, Compose v2 under `docker compose`, a FreeRDP 3
+  # client, and KVM for the Windows guest.
+  if docker ps >/dev/null 2>&1; then
+    pass "Docker responds to this user, so WinBoat can reach the container runtime."
+  else
+    fail "Docker is not reachable as this user. Run ./install.sh 30, then log out and back in for the docker group."
+  fi
+  if docker compose version >/dev/null 2>&1; then
+    pass "Docker Compose v2 is available as 'docker compose'."
+  else
+    fail "Docker Compose v2 is missing; WinBoat cannot start its Windows container. Run ./install.sh 10."
+  fi
+  freerdp_found=false
+  for freerdp_command in xfreerdp3 xfreerdp; do
+    if command -v "${freerdp_command}" >/dev/null 2>&1 \
+      && "${freerdp_command}" --version 2>/dev/null | grep -Fq 'version 3.'; then
+      freerdp_found=true
+      pass "FreeRDP 3 is available as ${freerdp_command}."
+      break
+    fi
+  done
+  [[ ${freerdp_found} == true ]] \
+    || fail "No FreeRDP 3.x client was found; WinBoat cannot open Windows applications. Run ./install.sh 10."
+  if [[ -e /dev/kvm ]]; then
+    pass "/dev/kvm exists, so WinBoat's Windows VM can use hardware virtualization."
+  else
+    fail "/dev/kvm is missing. Enable virtualization (VT-x or AMD-V) in firmware."
+  fi
+else
+  warn "WinBoat is not installed; skipping its host checks."
+fi
+
+if pacman -Q tailscale >/dev/null 2>&1; then
+  check_command tailscale
+  check_enabled tailscaled.service
+  # The daemon runs logged out until someone authenticates the machine, which
+  # is a deliberate step this installer does not take on your behalf.
+  if tailscale status >/dev/null 2>&1; then
+    pass "Tailscale is logged in to a tailnet."
+  else
+    warn "tailscaled is running but this machine is not logged in. Run: sudo tailscale up"
+  fi
+else
+  warn "Tailscale is not installed; skipping its checks."
+fi
+
 log_step "Boot menu"
 limine_configs=()
 boot_reader=()

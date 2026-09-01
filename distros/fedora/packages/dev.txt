@@ -1,0 +1,5 @@
+# Language toolchains. uv comes from its own official release in
+# packages/upstream.txt rather than from Fedora, so that the Python entry
+# point is the same build on both distributions this repository supports.
+python3 :: Python 3 interpreter
+golang :: Go toolchain

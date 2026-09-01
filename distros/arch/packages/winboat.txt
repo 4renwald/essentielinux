@@ -1,0 +1,7 @@
+# What WinBoat needs from the host. It runs Windows in a dockur/windows
+# container driven through Docker Compose v2, then opens each application over
+# RDP, so it checks for `docker ps`, `docker compose version`, and a FreeRDP
+# 3.x client at startup. WinBoat itself is winboat-bin in aur.txt.
+docker :: container runtime WinBoat runs the Windows VM in
+docker-compose :: Compose v2 CLI plugin WinBoat drives Docker with
+freerdp :: FreeRDP 3 client WinBoat opens Windows applications through

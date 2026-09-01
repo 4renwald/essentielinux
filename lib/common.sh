@@ -200,6 +200,40 @@ as_root() {
   fi
 }
 
+# Systemd and group membership ----------------------------------------------------
+
+# True when a unit file with exactly this name is installed. Units belonging to
+# deselectable packages are absent on machines where the package was dropped,
+# and `systemctl enable` on a missing unit fails the whole step.
+systemd_unit_exists() {
+  [[ -n $(systemctl list-unit-files --no-legend --no-pager -- "$1" 2>/dev/null) ]]
+}
+
+# Enable and start a unit only when the package that ships it was installed.
+enable_optional_unit() {
+  local unit=$1
+  if ! systemd_unit_exists "${unit}"; then
+    log_info "${unit} is not installed; skipping it."
+    return 0
+  fi
+  as_root systemctl enable --now "${unit}" \
+    || die "Unable to enable ${unit}. Check the package that provides it."
+}
+
+# Add the invoking user to a group a package created. Returns non-zero when the
+# group does not exist, which means the package providing it was not installed.
+ensure_user_in_group() {
+  local group=$1 user
+  user="$(id -un)"
+  getent group "${group}" >/dev/null 2>&1 || return 1
+  if id -nG "${user}" | tr ' ' '\n' | grep -Fxq "${group}"; then
+    return 0
+  fi
+  log_step "Adding ${user} to the ${group} group"
+  as_root usermod --append --groups "${group}" "${user}"
+  log_warn "${user} joined the ${group} group; it takes effect at the next login."
+}
+
 # Package selection store -------------------------------------------------------
 #
 # Manifest lines use the format `name :: description`; a leading `*` marks a

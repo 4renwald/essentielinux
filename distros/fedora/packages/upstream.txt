@@ -15,3 +15,5 @@ keeper :: Keeper password manager RPM
 opencode-desktop :: OpenCode desktop RPM
 proton-mail :: Proton Mail desktop RPM
 vm-curator :: vm-curator RPM
+uv :: uv and uvx, the Python package and project manager
+winboat :: WinBoat RPM, runs Windows applications from the Linux desktop

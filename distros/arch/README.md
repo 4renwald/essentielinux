@@ -24,3 +24,25 @@ reads depends on how the firmware reports the volume it booted from. It adds a
 named firmware entry only when no existing entry already boots the same loader,
 so the entry `archinstall` created ("Arch Linux Limine Bootloader") is kept
 rather than duplicated.
+
+## Toolchains, WinBoat, and Tailscale
+
+Both distributions install the same four additions, each as its own
+deselectable package group:
+
+- **Python 3 and uv** — uv is the entry point: it manages interpreters, virtual
+  environments, and project dependencies.
+- **Go** — the standard toolchain.
+- **WinBoat** — runs Windows applications on the Linux desktop. It boots
+  Windows in a container and connects over RDP, so the host also gets Docker
+  Engine, the Compose v2 plugin, and a FreeRDP 3 client. The installer enables
+  `docker.service` and adds you to the `docker` group, which WinBoat checks for
+  at startup. **Docker group membership is root-equivalent on this machine**:
+  anyone in it can start a privileged container. It takes effect at your next
+  login. WinBoat also needs KVM, so virtualization must be enabled in firmware.
+- **Tailscale** — the client and `tailscaled`, enabled but logged out. Joining
+  a tailnet authenticates this machine, so that stays a deliberate step:
+
+  ```bash
+  sudo tailscale up
+  ```

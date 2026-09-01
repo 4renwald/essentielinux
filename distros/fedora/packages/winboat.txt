@@ -1,0 +1,13 @@
+# What WinBoat needs from the host. It runs Windows in a dockur/windows
+# container driven through Docker Compose v2, then opens each application over
+# RDP, so it checks for `docker ps`, `docker compose version`, and a FreeRDP
+# 3.x client at startup. Docker Engine comes from Docker's own Fedora
+# repository, enabled in step 10: that is the combination Docker documents and
+# WinBoat expects, and it is not Fedora's moby-engine. WinBoat itself is the
+# `winboat` entry in upstream.txt.
+docker-ce :: Docker Engine
+docker-ce-cli :: Docker command line client
+containerd.io :: container runtime Docker Engine builds on
+docker-buildx-plugin :: Buildx plugin Docker Engine expects
+docker-compose-plugin :: Compose v2 plugin WinBoat drives Docker with
+freerdp :: FreeRDP 3 client WinBoat opens Windows applications through

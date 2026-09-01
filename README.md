@@ -12,6 +12,7 @@ This is my installer for Fedora and Arch machines. It detects the distro, then s
 | Ghostty themed by Noctalia | Ghostty themed by Caelestia |
 | Brave Origin, Equibop, VSCodium, Nextcloud, qBittorrent | Brave Origin, Equibop, VS Code, Nextcloud, qBittorrent |
 | PipeWire, gaming, printing, Snapper on btrfs | PipeWire, gaming, AUR tools, Snapper on btrfs |
+| Python + uv, Go, WinBoat, Tailscale | Python + uv, Go, WinBoat, Tailscale |
 
 ## 🚀 Quick start
 

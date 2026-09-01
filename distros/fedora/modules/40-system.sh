@@ -24,6 +24,30 @@ for service in \
   as_root systemctl enable --now "${service}"
 done
 
+# These units belong to deselectable packages, so each is enabled only where
+# its package survived the package picker. Docker has to be running before
+# WinBoat will start: it calls `docker ps` at launch and reports the host as
+# unusable when that fails. Tailscale does nothing until tailscaled runs; the
+# daemon starts logged out, and `tailscale up` stays a deliberate, interactive
+# step because it authenticates this machine against your tailnet.
+log_step 'Enabling services for the optional package groups'
+for service in docker.service tailscaled.service; do
+  enable_optional_unit "${service}"
+done
+
+# WinBoat checks `id -Gn` for docker and refuses to run without it. Membership
+# is root-equivalent on this machine -- anyone in the docker group can start a
+# privileged container -- so it is granted here only because WinBoat requires
+# it, and only when Docker Engine was actually installed.
+ensure_user_in_group docker || true
+
+# WinBoat boots a real Windows VM inside its container, which needs KVM. The
+# firmware switch for it is outside this installer, so report it rather than
+# letting the first launch fail with an unexplained container error.
+if rpm -q winboat >/dev/null 2>&1 && [[ ! -e /dev/kvm ]]; then
+  log_warn 'WinBoat is installed but /dev/kvm is missing; enable virtualization (VT-x or AMD-V) in firmware or its Windows VM cannot boot.'
+fi
+
 root_fstype="$(findmnt --noheadings --output FSTYPE --target / | head -n1)"
 if [[ ${root_fstype} == btrfs ]]; then
   if ! as_root snapper -c root get-config >/dev/null 2>&1; then
@@ -48,4 +72,4 @@ if [[ ${current_shell} != "${fish_path}" ]]; then
   log_warn 'fish becomes the login shell after the next login.'
 fi
 
-log_success 'zram, VM tunables, system services, DNF5 snapshots, and the login shell are configured.'
+log_success 'zram, VM tunables, system and optional services, DNF5 snapshots, and the login shell are configured.'

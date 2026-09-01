@@ -24,8 +24,16 @@ deploy_system_file "${DISTRO_ROOT}/etc/yum.repos.d/vscodium.repo" /etc/yum.repos
 deploy_system_file "${DISTRO_ROOT}/etc/yum.repos.d/claude-code.repo" /etc/yum.repos.d/claude-code.repo
 as_root dnf config-manager addrepo --overwrite \
   --from-repofile='https://repository.mullvad.net/rpm/stable/mullvad.repo'
+# Docker Engine from Docker's own repository, which is what WinBoat's
+# documentation requires; Fedora's moby-engine is a different stack and ships
+# no Compose v2 plugin under `docker compose`.
+as_root dnf config-manager addrepo --overwrite \
+  --from-repofile='https://download.docker.com/linux/fedora/docker-ce.repo'
+# Tailscale maintains the Fedora packages itself; there is no Fedora build.
+as_root dnf config-manager addrepo --overwrite \
+  --from-repofile='https://pkgs.tailscale.com/stable/fedora/tailscale.repo'
 
 as_root flatpak remote-add --system --if-not-exists flathub \
   'https://dl.flathub.org/repo/flathub.flatpakrepo'
 
-log_success 'RPM Fusion, Hyprland/Ghostty COPRs, the Brave repository, vendor RPM repositories, and Flathub are enabled.'
+log_success 'RPM Fusion, Hyprland/Ghostty COPRs, the Brave, Docker and Tailscale repositories, vendor RPM repositories, and Flathub are enabled.'

@@ -22,7 +22,7 @@ MODULE_NAMES=(
 MODULE_HINTS=(
   'Verify Fedora, x86_64, and required tooling'
   'RPM Fusion, COPR, vendor repositories, and Flathub'
-  'System update plus core, desktop, shell, apps, and the GPU driver'
+  'System update plus core, desktop, shell, apps, toolchains, WinBoat, and the GPU driver'
   'PipeWire, WirePlumber, and Bluetooth codecs'
   'Steam, GameMode, MangoHud, Gamescope, NTSYNC, and Wine'
   'CUPS, HPLIP, and Gutenprint'
@@ -43,6 +43,8 @@ declare -A MANIFEST_LABELS=(
   [shell]='Terminal & shell'
   [apps]='Applications'
   [audio]='Audio'
+  [dev]='Language toolchains'
+  [winboat]='WinBoat host stack'
   [gaming]='Gaming'
   [printing]='Printing'
   [upstream]='Upstream tools & vendor apps'
@@ -54,11 +56,11 @@ declare -A MANIFEST_LABELS=(
 
 # Fill MANIFESTS with the selectable package groups of a step.
 step_manifests() {
-  local id gpu
+  local id=$1 gpu
   MANIFESTS=()
   case ${id} in
     20)
-      MANIFESTS=(core desktop shell apps)
+      MANIFESTS=(core desktop shell apps dev winboat)
       while IFS= read -r gpu; do
         MANIFESTS+=("${gpu}")
       done < <(gpu_driver_vendors)

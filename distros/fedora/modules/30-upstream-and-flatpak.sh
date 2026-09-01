@@ -63,6 +63,24 @@ if feature_enabled codex || feature_enabled opencode || feature_enabled lazygit 
   fi
 fi
 
+if feature_enabled uv; then
+  log_step 'Installing uv from its official release'
+  # The archive carries both uv and uvx. install_archive_binary lifts one file
+  # per call and would download the same tarball twice, so unpack it once.
+  uv_url="$(github_asset_url astral-sh/uv '^uv-x86_64-unknown-linux-gnu[.]tar[.]gz$')" \
+    || die 'Unable to find the official uv x86_64 release.'
+  uv_extract="${WORK_DIR}/uv"
+  install -d "${uv_extract}"
+  download "${uv_url}" "${WORK_DIR}/uv.tar.gz"
+  tar -xf "${WORK_DIR}/uv.tar.gz" -C "${uv_extract}"
+  for uv_binary in uv uvx; do
+    uv_found="$(find "${uv_extract}" -type f -name "${uv_binary}" -print -quit)"
+    [[ -n ${uv_found} ]] || die "The uv release did not contain ${uv_binary}."
+    install --mode=0755 "${uv_found}" "${HOME}/.local/bin/${uv_binary}"
+  done
+  log_success 'Installed uv and uvx from astral-sh/uv.'
+fi
+
 if feature_enabled bluetui; then
   log_step 'Installing bluetui'
   bluetui_url="$(github_asset_url pythops/bluetui '^bluetui-x86_64-linux-musl$')" \
@@ -194,6 +212,14 @@ if feature_enabled vm-curator; then
   vm_curator_url="$(github_asset_url mroboff/vm-curator '^vm-curator-[0-9.]+-1[.]x86_64[.]rpm$')" \
     || die 'Unable to find the official vm-curator x86_64 RPM release.'
   as_root dnf -y install "${vm_curator_url}"
+fi
+
+if feature_enabled winboat; then
+  log_step 'Installing the official WinBoat RPM'
+  # electron-builder names the artifact ${name}-${version}-${arch}.${ext}.
+  winboat_url="$(github_asset_url TibixDev/winboat '^winboat-[0-9.]+-x86_64[.]rpm$')" \
+    || die 'Unable to find the official WinBoat x86_64 RPM release.'
+  as_root dnf -y install "${winboat_url}"
 fi
 
 log_success 'Enabled upstream tools, fonts, cursor, and vendor RPMs are installed.'

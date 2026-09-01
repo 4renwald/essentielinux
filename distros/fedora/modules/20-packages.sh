@@ -8,7 +8,7 @@ source "${REPO_ROOT}/lib/common.sh"
 log_step 'Updating the Fedora installation'
 as_root dnf -y upgrade --refresh
 
-for manifest in core desktop shell apps; do
+for manifest in core desktop shell apps dev winboat; do
   log_step "Installing ${manifest} packages"
   install_dnf_manifest "${DISTRO_ROOT}/packages/${manifest}.txt"
 done

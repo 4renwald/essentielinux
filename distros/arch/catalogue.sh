@@ -20,7 +20,7 @@ MODULE_NAMES=(
 )
 MODULE_HINTS=(
   'Multilib, pacman options, system update, build tools, and paru'
-  'Core, desktop, apps, audio, and shell package groups'
+  'Core, desktop, apps, audio, shell, toolchain, and WinBoat groups'
   'CPU microcode and the GPU vendor chosen interactively'
   'Steam, GameMode, Gamescope, and the AUR application set'
   'zram, VM tunables, system services, and user services'
@@ -41,6 +41,8 @@ declare -A MANIFEST_LABELS=(
   [shell]='Terminal & shell'
   [apps]='Applications'
   [audio]='Audio'
+  [dev]='Language toolchains'
+  [winboat]='WinBoat host stack'
   [gaming]='Gaming'
   [aur]='AUR applications'
 )
@@ -52,7 +54,7 @@ step_manifests() {
   local id=$1
   MANIFESTS=()
   case ${id} in
-    10) MANIFESTS=(base desktop apps audio shell) ;;
+    10) MANIFESTS=(base desktop apps audio shell dev winboat) ;;
     25) MANIFESTS=(gaming aur) ;;
   esac
 }

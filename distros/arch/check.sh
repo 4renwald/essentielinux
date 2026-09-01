@@ -404,7 +404,7 @@ else
 fi
 
 log_step "Caelestia app integrations"
-if caelestia_component_enabled vscode; then
+if caelestia_component_enabled vscode || pacman -Q code >/dev/null 2>&1; then
   code_settings="${HOME}/.config/Code/User/settings.json"
   if [[ -f ${code_settings} ]] \
     && jq -e '."workbench.colorTheme" == "Caelestia"' "${code_settings}" >/dev/null 2>&1; then
@@ -413,7 +413,7 @@ if caelestia_component_enabled vscode; then
     fail "Code is not set to the Caelestia colour theme: ${code_settings}. Run ./install.sh 45."
   fi
 fi
-if caelestia_component_enabled vscodium; then
+if caelestia_component_enabled vscodium || pacman -Q vscodium-bin >/dev/null 2>&1; then
   codium_settings="${HOME}/.config/VSCodium/User/settings.json"
   if [[ -f ${codium_settings} ]] \
     && jq -e '."workbench.colorTheme" == "Caelestia"' "${codium_settings}" >/dev/null 2>&1; then
@@ -422,7 +422,7 @@ if caelestia_component_enabled vscodium; then
     fail "VSCodium is not set to the Caelestia colour theme: ${codium_settings}. Run ./install.sh 45."
   fi
 fi
-if caelestia_component_enabled discord; then
+if caelestia_component_enabled discord || pacman -Q equibop-bin >/dev/null 2>&1; then
   equibop_settings="${HOME}/.config/equibop/settings/settings.json"
   equibop_theme="${HOME}/.config/equibop/themes/caelestia.theme.css"
   if [[ -f ${equibop_theme} && -f ${equibop_settings} ]] \
@@ -433,7 +433,8 @@ if caelestia_component_enabled discord; then
     fail "Equibop is missing the enabled Caelestia theme. Run ./install.sh 45."
   fi
 fi
-if caelestia_component_enabled spotify; then
+if caelestia_component_enabled spotify \
+  || { pacman -Q spotify >/dev/null 2>&1 && pacman -Q spicetify-cli >/dev/null 2>&1; }; then
   if command -v spicetify >/dev/null 2>&1 \
     && spicetify config current_theme 2>/dev/null | grep -Eq '(^|[[:space:]=])caelestia([[:space:]]|$)'; then
     pass 'Spicetify is using the Caelestia theme.'
@@ -441,17 +442,21 @@ if caelestia_component_enabled spotify; then
     fail 'Spicetify is not using the Caelestia theme. Run ./install.sh 45.'
   fi
 fi
-if caelestia_component_enabled zen; then
+if caelestia_component_enabled zen || pacman -Q zen-browser-bin >/dev/null 2>&1; then
   if [[ -x /usr/lib/caelestia/caelestiafox ]] \
     && [[ -f ${HOME}/.mozilla/native-messaging-hosts/caelestiafox.json ]]; then
     pass 'CaelestiaFox native messaging is available for Zen.'
   else
     fail 'CaelestiaFox native messaging is missing for Zen. Run ./install.sh 45.'
   fi
-  zen_profiles_ini="${HOME}/.zen/profiles.ini"
+  zen_profile_roots=()
+  for zen_root in "${XDG_CONFIG_HOME:-${HOME}/.config}/zen" "${HOME}/.zen"; do
+    [[ -r ${zen_root}/profiles.ini ]] && zen_profile_roots+=("${zen_root}")
+  done
   zen_theme_profiles=0
-  if [[ -r ${zen_profiles_ini} ]]; then
-    mapfile -t zen_theme_profile_paths < <(awk -v root="${HOME}/.zen" '
+  for zen_root in "${zen_profile_roots[@]}"; do
+    profiles_ini="${zen_root}/profiles.ini"
+    mapfile -t zen_theme_profile_paths < <(awk -v root="${zen_root}" '
       function flush() {
         if (path != "") { print (relative == "0" ? path : root "/" path) }
         path = ""; relative = "1"
@@ -461,7 +466,7 @@ if caelestia_component_enabled zen; then
       /^[[:space:]]*Path[[:space:]]*=/ { sub(/^[^=]*=/, ""); path = $0; next }
       /^[[:space:]]*IsRelative[[:space:]]*=/ { sub(/^[^=]*=/, ""); relative = $0; next }
       END { flush() }
-    ' "${zen_profiles_ini}")
+    ' "${profiles_ini}")
     for zen_theme_profile in "${zen_theme_profile_paths[@]}"; do
       if [[ -f ${zen_theme_profile}/chrome/userChrome.css ]] \
         && grep -Fqx ':root {' "${zen_theme_profile}/chrome/userChrome.css" \
@@ -470,7 +475,7 @@ if caelestia_component_enabled zen; then
         zen_theme_profiles=$((zen_theme_profiles + 1))
       fi
     done
-  fi
+  done
   if ((zen_theme_profiles > 0)); then
     pass "Caelestia's Zen stylesheet is enabled in ${zen_theme_profiles} profile(s)."
   else
@@ -779,8 +784,14 @@ fi
 
 # The add-on cannot be installed by this repository, so its absence is a warning
 # rather than a failure: everything else here still works from the command line.
-zen_root="${HOME}/.zen"
-if [[ -d ${zen_root} ]] \
+zen_root=''
+for candidate in "${XDG_CONFIG_HOME:-${HOME}/.config}/zen" "${HOME}/.zen"; do
+  if [[ -r ${candidate}/profiles.ini ]]; then
+    zen_root=${candidate}
+    break
+  fi
+done
+if [[ -n ${zen_root} && -d ${zen_root} ]] \
   && ! find "${zen_root}" -maxdepth 3 -name 'ff2mpv@yossarian.net*' -print -quit 2>/dev/null | grep -q .; then
   warn "The ff2mpv add-on does not appear to be installed in Zen. Get it from https://addons.mozilla.org/firefox/addon/ff2mpv/ ; the native host is ready for it."
 fi
@@ -816,10 +827,10 @@ fi
 # Zen needs the preference as well as the environment: Firefox has shipped
 # VA-API on by default since 137 but still declines to use it on NVIDIA unless
 # it is forced.
-zen_profiles_ini="${zen_root}/profiles.ini"
-if [[ ! -r ${zen_profiles_ini} ]]; then
-  warn "${zen_profiles_ini} does not exist, so Zen has no profile to check. Start Zen once, then run ./install.sh 52."
+if [[ -z ${zen_root} ]]; then
+  warn "No Zen profile root exists yet; start Zen once, then run ./install.sh 52."
 else
+  zen_profiles_ini="${zen_root}/profiles.ini"
   mapfile -t checked_zen_profiles < <(awk -v root="${zen_root}" '
     function flush() {
       if (path != "") { print (relative == "0" ? path : root "/" path) }

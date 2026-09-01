@@ -49,7 +49,8 @@ readonly CAELESTIA_SEQUENCES_PATTERN='caelestia/sequences.txt'
 
 readonly UWSM_CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/uwsm"
 readonly CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
-readonly ZEN_ROOT="${HOME}/.zen"
+readonly ZEN_CONFIG_ROOT="${CONFIG_HOME}/zen"
+readonly ZEN_LEGACY_ROOT="${HOME}/.zen"
 readonly ZEN_THEME_BEGIN='// >>> workstation Caelestia Zen theme >>>'
 readonly ZEN_THEME_END='// <<< workstation Caelestia Zen theme >>>'
 readonly ZEN_CAELESTIAFOX_ID='caelestiafox@caelestia.org'
@@ -147,6 +148,32 @@ caelestia_component_enabled() {
   jq -e --arg component "${component}" \
     '.enabled_components | type == "array" and index($component) != null' \
     "${CAELESTIA_STATE_FILE}" >/dev/null 2>&1
+}
+
+caelestia_integration_selected() {
+  local component=$1
+  caelestia_component_enabled "${component}" && return 0
+  case ${component} in
+    vscode)
+      caelestia_package_selected apps code
+      ;;
+    vscodium)
+      caelestia_package_selected aur vscodium-bin
+      ;;
+    discord)
+      caelestia_package_selected aur equibop-bin
+      ;;
+    spotify)
+      caelestia_package_selected aur spotify \
+        && caelestia_package_selected aur spicetify-cli
+      ;;
+    zen)
+      caelestia_package_selected aur zen-browser-bin
+      ;;
+    *)
+      return 1
+      ;;
+  esac
 }
 
 # Keep the app integrations tied to the package choices made earlier in this
@@ -323,7 +350,9 @@ install_zen_caelestia_policy() {
 
 create_zen_profile_root() {
   local launcher pid tries
-  [[ -f ${ZEN_ROOT}/profiles.ini ]] && return 0
+  local -a zen_roots=()
+  mapfile -t zen_roots < <(zen_profile_roots)
+  ((${#zen_roots[@]} > 0)) && return 0
   launcher="$(command -v zen-browser 2>/dev/null || true)"
   if [[ -z ${launcher} ]]; then
     log_warn 'Zen is enabled but its launcher is unavailable; its profile theme will be applied on the first Zen start.'
@@ -335,18 +364,27 @@ create_zen_profile_root() {
     >/dev/null 2>&1 &
   pid=$!
   for ((tries = 0; tries < 60; tries++)); do
-    [[ -f ${ZEN_ROOT}/profiles.ini ]] && break
+    mapfile -t zen_roots < <(zen_profile_roots)
+    ((${#zen_roots[@]} > 0)) && break
     kill -0 "${pid}" 2>/dev/null || break
     sleep 0.5
   done
   kill "${pid}" 2>/dev/null || true
   wait "${pid}" 2>/dev/null || true
-  if [[ -f ${ZEN_ROOT}/profiles.ini ]]; then
+  mapfile -t zen_roots < <(zen_profile_roots)
+  if ((${#zen_roots[@]} > 0)); then
     log_success 'Zen profile created.'
     return 0
   fi
   log_warn 'Zen did not create a profile in headless mode; start it once to create one, then the managed theme will be picked up.'
   return 1
+}
+
+zen_profile_roots() {
+  local root
+  for root in "${ZEN_CONFIG_ROOT}" "${ZEN_LEGACY_ROOT}"; do
+    [[ -f ${root}/profiles.ini ]] && printf '%s\n' "${root}"
+  done
 }
 
 zen_profile_paths() {
@@ -365,7 +403,7 @@ zen_profile_paths() {
 }
 
 deploy_zen_caelestia_theme() {
-  local source_css=$1 profile css_temp user_js user_temp
+  local source_css=$1 root=$2 profile css_temp user_js user_temp
   local configured=0
   [[ -f ${source_css} ]] \
     || die "Caelestia's Zen stylesheet is missing: ${source_css}"
@@ -405,7 +443,7 @@ deploy_zen_caelestia_theme() {
     install --mode=0644 "${user_temp}" "${user_js}"
     rm -f -- "${user_temp}"
     configured=$((configured + 1))
-  done < <(zen_profile_paths "${ZEN_ROOT}/profiles.ini" "${ZEN_ROOT}")
+  done < <(zen_profile_paths "${root}/profiles.ini" "${root}")
 
   rm -f -- "${css_temp}"
   if ((configured == 0)); then
@@ -416,29 +454,33 @@ deploy_zen_caelestia_theme() {
 }
 
 activate_zen_theme() {
-  local distribution_dir
+  local distribution_dir root
+  local -a zen_roots=()
   install_caelestiafox_native_host
   distribution_dir="$(zen_distribution_dir)" \
     || die 'Could not locate Zen’s distribution directory for the CaelestiaFox policy.'
   install_zen_caelestia_policy "${distribution_dir}"
   create_zen_profile_root || return 0
-  deploy_zen_caelestia_theme "${CAELESTIA_DOTS_DIR}/zen/userChrome.css" || true
+  mapfile -t zen_roots < <(zen_profile_roots)
+  for root in "${zen_roots[@]}"; do
+    deploy_zen_caelestia_theme "${CAELESTIA_DOTS_DIR}/zen/userChrome.css" "${root}" || true
+  done
 }
 
 activate_caelestia_integrations() {
-  if caelestia_component_enabled vscode; then
+  if caelestia_integration_selected vscode; then
     activate_editor_theme vscode
   fi
-  if caelestia_component_enabled vscodium; then
+  if caelestia_integration_selected vscodium; then
     activate_editor_theme vscodium
   fi
-  if caelestia_component_enabled discord; then
+  if caelestia_integration_selected discord; then
     activate_equibop_theme
   fi
-  if caelestia_component_enabled spotify; then
+  if caelestia_integration_selected spotify; then
     activate_spicetify_theme
   fi
-  if caelestia_component_enabled zen; then
+  if caelestia_integration_selected zen; then
     activate_zen_theme
   fi
 }

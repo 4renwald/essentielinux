@@ -11,7 +11,8 @@ source "${REPO_ROOT}/lib/common.sh"
 
 readonly MPV_CONFIG_DIR="${HOME}/.config/mpv"
 readonly SHADER_LINK="${MPV_CONFIG_DIR}/shaders"
-readonly ZEN_ROOT="${HOME}/.zen"
+readonly ZEN_CONFIG_ROOT="${XDG_CONFIG_HOME:-${HOME}/.config}/zen"
+readonly ZEN_LEGACY_ROOT="${HOME}/.zen"
 readonly NATIVE_HOST_DIR="${HOME}/.mozilla/native-messaging-hosts"
 readonly PREF_BEGIN='// >>> workstation video decoding >>>'
 readonly PREF_END='// <<< workstation video decoding <<<'
@@ -120,22 +121,29 @@ EOF
 fi
 
 log_step "Enabling hardware video decoding in Zen"
-if [[ ! -d ${ZEN_ROOT} ]]; then
-  log_warn "${ZEN_ROOT} does not exist yet, so Zen has no profile to configure. Start Zen once, then rerun ./install.sh 52."
+zen_root=''
+for candidate in "${ZEN_CONFIG_ROOT}" "${ZEN_LEGACY_ROOT}"; do
+  if [[ -r ${candidate}/profiles.ini ]]; then
+    zen_root=${candidate}
+    break
+  fi
+done
+if [[ -z ${zen_root} ]]; then
+  log_warn "No Zen profile root exists yet (${ZEN_CONFIG_ROOT} or ${ZEN_LEGACY_ROOT}), so Zen has no profile to configure. Start Zen once, then rerun ./install.sh 52."
   log_success "Video pipeline configured apart from Zen's preferences."
   exit 0
 fi
-if path_has_symlink "${ZEN_ROOT}"; then
-  die "Refusing to write through a symlinked Zen directory: ${ZEN_ROOT}"
+if path_has_symlink "${zen_root}"; then
+  die "Refusing to write through a symlinked Zen directory: ${zen_root}"
 fi
 
-profiles_ini="${ZEN_ROOT}/profiles.ini"
+profiles_ini="${zen_root}/profiles.ini"
 [[ -r ${profiles_ini} ]] \
   || die "${profiles_ini} is missing, so the Zen profiles cannot be identified. Start Zen once, then rerun ./install.sh 52."
 
 # profiles.ini is the only reliable list: a profile directory is named with a
 # random prefix, and stale directories from removed profiles stay on disk.
-mapfile -t zen_profiles < <(awk -v root="${ZEN_ROOT}" '
+mapfile -t zen_profiles < <(awk -v root="${zen_root}" '
   function flush() {
     if (path != "") { print (relative == "0" ? path : root "/" path) }
     path = ""; relative = "1"

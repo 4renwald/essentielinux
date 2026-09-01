@@ -21,6 +21,14 @@ check_package() {
   if pacman -Q "$1" >/dev/null 2>&1; then pass "Package installed: $1"; else fail "Missing package: $1"; fi
 }
 
+caelestia_component_enabled() {
+  local component=$1 state_file="${XDG_STATE_HOME:-${HOME}/.local/state}/caelestia/dots-state.json"
+  [[ -f ${state_file} ]] \
+    && jq -e --arg component "${component}" \
+      '.enabled_components | type == "array" and index($component) != null' \
+      "${state_file}" >/dev/null 2>&1
+}
+
 check_enabled() {
   if systemctl is-enabled --quiet "$1"; then pass "Service enabled: $1"; else fail "Service not enabled: $1"; fi
 }
@@ -393,6 +401,81 @@ if [[ -f ${caelestia_state_file} ]] && command -v jq >/dev/null 2>&1 \
   pass "Caelestia installation state records the Hyprland component."
 else
   fail "Caelestia installation state is missing, invalid, or does not enable Hyprland. Run ./install.sh 45."
+fi
+
+log_step "Caelestia app integrations"
+if caelestia_component_enabled vscode; then
+  code_settings="${HOME}/.config/Code/User/settings.json"
+  if [[ -f ${code_settings} ]] \
+    && jq -e '."workbench.colorTheme" == "Caelestia"' "${code_settings}" >/dev/null 2>&1; then
+    pass 'Code starts with the Caelestia colour theme.'
+  else
+    fail "Code is not set to the Caelestia colour theme: ${code_settings}. Run ./install.sh 45."
+  fi
+fi
+if caelestia_component_enabled vscodium; then
+  codium_settings="${HOME}/.config/VSCodium/User/settings.json"
+  if [[ -f ${codium_settings} ]] \
+    && jq -e '."workbench.colorTheme" == "Caelestia"' "${codium_settings}" >/dev/null 2>&1; then
+    pass 'VSCodium starts with the Caelestia colour theme.'
+  else
+    fail "VSCodium is not set to the Caelestia colour theme: ${codium_settings}. Run ./install.sh 45."
+  fi
+fi
+if caelestia_component_enabled discord; then
+  equibop_settings="${HOME}/.config/equibop/settings/settings.json"
+  equibop_theme="${HOME}/.config/equibop/themes/caelestia.theme.css"
+  if [[ -f ${equibop_theme} && -f ${equibop_settings} ]] \
+    && jq -e '.enabledThemes | type == "array" and index("caelestia.theme.css") != null' \
+      "${equibop_settings}" >/dev/null 2>&1; then
+    pass 'Equibop has Caelestia enabled in its local theme list.'
+  else
+    fail "Equibop is missing the enabled Caelestia theme. Run ./install.sh 45."
+  fi
+fi
+if caelestia_component_enabled spotify; then
+  if command -v spicetify >/dev/null 2>&1 \
+    && spicetify config current_theme 2>/dev/null | grep -Eq '(^|[[:space:]=])caelestia([[:space:]]|$)'; then
+    pass 'Spicetify is using the Caelestia theme.'
+  else
+    fail 'Spicetify is not using the Caelestia theme. Run ./install.sh 45.'
+  fi
+fi
+if caelestia_component_enabled zen; then
+  if [[ -x /usr/lib/caelestia/caelestiafox ]] \
+    && [[ -f ${HOME}/.mozilla/native-messaging-hosts/caelestiafox.json ]]; then
+    pass 'CaelestiaFox native messaging is available for Zen.'
+  else
+    fail 'CaelestiaFox native messaging is missing for Zen. Run ./install.sh 45.'
+  fi
+  zen_profiles_ini="${HOME}/.zen/profiles.ini"
+  zen_theme_profiles=0
+  if [[ -r ${zen_profiles_ini} ]]; then
+    mapfile -t zen_theme_profile_paths < <(awk -v root="${HOME}/.zen" '
+      function flush() {
+        if (path != "") { print (relative == "0" ? path : root "/" path) }
+        path = ""; relative = "1"
+      }
+      { sub(/\r$/, "") }
+      /^\[/ { flush(); next }
+      /^[[:space:]]*Path[[:space:]]*=/ { sub(/^[^=]*=/, ""); path = $0; next }
+      /^[[:space:]]*IsRelative[[:space:]]*=/ { sub(/^[^=]*=/, ""); relative = $0; next }
+      END { flush() }
+    ' "${zen_profiles_ini}")
+    for zen_theme_profile in "${zen_theme_profile_paths[@]}"; do
+      if [[ -f ${zen_theme_profile}/chrome/userChrome.css ]] \
+        && grep -Fqx ':root {' "${zen_theme_profile}/chrome/userChrome.css" \
+        && grep -Fq 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);' \
+          "${zen_theme_profile}/user.js" 2>/dev/null; then
+        zen_theme_profiles=$((zen_theme_profiles + 1))
+      fi
+    done
+  fi
+  if ((zen_theme_profiles > 0)); then
+    pass "Caelestia's Zen stylesheet is enabled in ${zen_theme_profiles} profile(s)."
+  else
+    warn 'Zen has no themed profile yet; start Zen once and rerun ./install.sh 45.'
+  fi
 fi
 
 caelestia_tree_ok=true

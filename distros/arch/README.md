@@ -11,3 +11,10 @@
 - Wi-Fi uses Arch's kernel drivers, `linux-firmware`, and NetworkManager's
   `wpa_supplicant` backend; no vendor-specific driver is selected by this repo.
 - A regular user with sudo/network access, then run the installer from the repo root.
+
+When Caelestia is installed, its app integrations follow the packages you
+selected: Code opens with the Caelestia theme, Equibop enables its generated
+theme, and Spicetify applies its Spotify theme. Zen gets the CaelestiaFox
+extension through its Firefox policy and the required `userChrome.css` profile
+preference, so there is no browser setup click. If Zen has no profile yet, the
+installer starts it headlessly once to create one.

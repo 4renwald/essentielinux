@@ -18,17 +18,23 @@ hl.config({
 -- Hyprland hands to exec.
 hl.bind("SUPER + K", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.local/bin/hypr-keybinds"))
 
--- Gammastep treats SIGUSR1 as an inhibit toggle: the process and its automatic
--- location schedule keep running, while the colour adjustment switches between
--- active and neutral. HyprMod configures Hyprland itself and has no control for
--- external night-light daemons, so keep this in the user keybind layer. The
--- low-urgency transient notification confirms the keypress without lingering.
+-- Gammastep has no way to query a running daemon, so the toggle derives the
+-- state from the process itself: when the daemon is running the night light is
+-- on, and toggling off stops it entirely. An inhibit-style toggle (SIGUSR1)
+-- cannot report the resulting state, and a state file would drift from reality
+-- after a session restart or a manual daemon kill. The low-urgency transient
+-- notification names the resulting state instead of just confirming the
+-- keypress.
 hl.bind(
     "SUPER + SHIFT + N",
     hl.dsp.exec_cmd(
-        "/usr/bin/pkill -USR1 -x gammastep && " ..
+        "/bin/sh -c 'if /usr/bin/pgrep -x gammastep >/dev/null 2>&1; then " ..
+        "/usr/bin/pkill -x gammastep && " ..
         "/usr/bin/notify-send --urgency=low --transient --expire-time=1500 " ..
-        "--app-name=Gammastep --icon=night-light-symbolic 'Night light toggled'"
+        "--app-name=Gammastep --icon=night-light-symbolic \"Night light off\"; else " ..
+        "/usr/bin/setsid --fork /usr/bin/gammastep >/dev/null 2>&1; " ..
+        "/usr/bin/notify-send --urgency=low --transient --expire-time=1500 " ..
+        "--app-name=Gammastep --icon=night-light-symbolic \"Night light on\"; fi'"
     ),
     { description = "Toggle night light" }
 )

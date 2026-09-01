@@ -378,7 +378,7 @@ if [[ ${caelestia_ok} == true ]]; then
 
   if grep -Fq 'vars.automaticNightLight ~= false' "${hypr_execs_config}" \
     && grep -Eq 'automaticNightLight[[:space:]]*=[[:space:]]*(true|false)' "${caelestia_conf}/hypr-vars.lua" \
-    && grep -Fq 'pkill -USR1 -x gammastep' "${caelestia_conf}/hypr-user.lua"; then
+    && grep -Fq 'pgrep -x gammastep' "${caelestia_conf}/hypr-user.lua"; then
     pass "Caelestia's automatic night light has a master setting and a SUPER + SHIFT + N toggle."
   else
     fail "Caelestia's managed night-light setting or toggle is missing. Run ./install.sh 45, then ./install.sh 50."

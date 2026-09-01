@@ -309,8 +309,19 @@ normalize_efi_path() {
   printf '%s\n' "${path}"
 }
 
+# efibootmgr renders device paths through libefivar, and the shape of a file
+# path node changed with it. Older releases wrapped it, File(\EFI\BOOT\BOOTX64.EFI);
+# current ones print it bare, joined to the node before it by a slash:
+#   HD(1,GPT,<guid>,0x800,0x200000)/\EFI\BOOT\BOOTX64.EFI
+# Read both forms, or on a current Arch install every entry looks pathless and
+# no entry can ever be recognised.
 efi_entry_path() {
-  sed -n 's/.*[Ff]ile(\([^)]*\)).*/\1/p' <<< "$1"
+  local path
+  path="$(sed -n 's/.*[Ff]ile(\([^)]*\)).*/\1/p' <<< "$1")"
+  if [[ -z ${path} ]]; then
+    path="$(sed -n 's|.*)/\(\\[^[:space:]]*\).*|\1|p' <<< "$1")"
+  fi
+  printf '%s\n' "${path}"
 }
 
 # The human-readable label of an entry, without the Boot#### prefix and
@@ -333,18 +344,36 @@ efi_boot_entries() {
     <<< "${efibootmgr_output}"
 }
 
-# An entry created by a previous run of this module, by archinstall (which
-# labels it "Arch Linux Limine Bootloader"), or by hand all boot the same
-# file. Matching on the loader path instead of on the label is what keeps this
-# module from stacking a second entry beside one that already works.
-entry_targets_loader() {
-  local entry=$1 entry_path
-  entry_path="$(efi_entry_path "${entry}")"
-  [[ -n ${entry_path} ]] || return 1
-  [[ $(normalize_efi_path "${entry_path}") == "$(normalize_efi_path "${loader_path}")" ]] || return 1
+entry_on_this_partition() {
   # Two disks can each hold a \EFI\BOOT\BOOTX64.EFI, so an identical path is
   # only the same loader when it is also on this partition.
-  [[ -z ${esp_partuuid} ]] || [[ ${entry,,} == *"${esp_partuuid}"* ]]
+  [[ -z ${esp_partuuid} ]] || [[ ${1,,} == *"${esp_partuuid}"* ]]
+}
+
+entry_path_matches_loader() {
+  local entry_path
+  # When no entry in the listing yields a readable path, efibootmgr is
+  # rendering device paths in a shape this module cannot parse. Registering a
+  # duplicate entry, or failing the step, would both be worse than trusting
+  # the label and the partition, so treat the path as agreeing.
+  [[ ${efi_paths_readable} == true ]] || return 0
+  entry_path="$(efi_entry_path "$1")"
+  [[ -n ${entry_path} ]] || return 1
+  [[ $(normalize_efi_path "${entry_path}") == "$(normalize_efi_path "${loader_path}")" ]]
+}
+
+# The entry this module is responsible for: one that boots this loader from
+# this partition under a label naming Limine. The label matters as much as the
+# path, because the firmware's generic fallback entry ("UEFI OS") points at
+# \EFI\BOOT\BOOTX64.EFI too whenever Limine is installed in removable mode.
+# Matching that one would leave the machine with no named Limine entry at all.
+# The label test is loose on purpose: archinstall calls its own entry
+# "Arch Linux Limine Bootloader".
+entry_is_limine_for_loader() {
+  local entry=$1
+  [[ $(efi_entry_label "${entry}") == *[Ll]imine* ]] || return 1
+  entry_on_this_partition "${entry}" || return 1
+  entry_path_matches_loader "${entry}"
 }
 
 efibootmgr_output="$(as_root efibootmgr -v)" \
@@ -357,11 +386,22 @@ if [[ -n ${esp_partuuid} && ${efibootmgr_output,,} != *"${esp_partuuid}"* ]]; th
   esp_partuuid=''
 fi
 
+efi_paths_readable=false
+while IFS= read -r entry; do
+  if [[ -n $(efi_entry_path "${entry}") ]]; then
+    efi_paths_readable=true
+    break
+  fi
+done < <(efi_boot_entries)
+if [[ ${efi_paths_readable} == false ]]; then
+  log_warn 'This efibootmgr prints device paths in an unrecognised form; matching boot entries by label and partition instead.'
+fi
+
 matching_entry=''
 labelled_entry=''
 while IFS= read -r entry; do
   [[ -n ${entry} ]] || continue
-  if entry_targets_loader "${entry}"; then
+  if entry_is_limine_for_loader "${entry}"; then
     matching_entry=${entry}
     break
   fi
@@ -391,7 +431,7 @@ else
   matching_entry=''
   while IFS= read -r entry; do
     [[ -n ${entry} ]] || continue
-    if entry_targets_loader "${entry}"; then
+    if entry_is_limine_for_loader "${entry}"; then
       matching_entry=${entry}
       break
     fi

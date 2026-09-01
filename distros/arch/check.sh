@@ -976,9 +976,13 @@ if efibootmgr -v 2>/dev/null | awk '
       label = line
       sub(/\t.*$/, "", label)
       sub(/(HD|PciRoot|VenHw|FvVol)\(.*$/, "", label)
+      # Older efibootmgr wrapped the file path as File(\EFI\...); current
+      # releases print it bare after the device node, as )/\EFI\...
       path = ""
       if (match(line, /[Ff]ile\([^)]*\)/)) {
         path = substr(line, RSTART + 5, RLENGTH - 6)
+      } else if (match(line, /\)\/\\[^ \t]*/)) {
+        path = substr(line, RSTART + 2, RLENGTH - 2)
       }
       if (tolower(label) ~ /limine/ || tolower(path) ~ /limine/) { found = 1 }
     }

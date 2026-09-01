@@ -1,5 +1,6 @@
 # System-wide Flathub applications.
 org.signal.Signal :: Signal messenger
+io.github.equicord.equibop :: Equibop Discord client
 md.obsidian.Obsidian :: Obsidian notes
 app.zen_browser.zen :: Zen browser
 com.spotify.Client :: Spotify music

@@ -1,6 +1,5 @@
 # Applications from Fedora and vendor repositories.
 codium :: VSCodium editor
-discord :: Discord chat
 gh :: GitHub CLI
 glab :: GitLab CLI
 mullvad-vpn :: Mullvad VPN client

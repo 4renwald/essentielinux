@@ -1,5 +1,4 @@
 # Desktop applications from Arch's official repositories.
-discord :: Discord chat
 github-cli :: GitHub CLI
 glab :: GitLab CLI
 code :: Code - OSS editor

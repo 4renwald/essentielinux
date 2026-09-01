@@ -170,7 +170,7 @@ caelestia_component_is_app_default() {
       caelestia_package_selected apps code
       ;;
     discord)
-      caelestia_package_selected apps discord
+      caelestia_package_selected aur equibop-bin
       ;;
     zen)
       caelestia_package_selected aur zen-browser-bin

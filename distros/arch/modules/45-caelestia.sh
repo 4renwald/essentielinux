@@ -4,6 +4,10 @@ set -Eeuo pipefail
 readonly DISTRO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly REPO_ROOT="$(cd -- "${DISTRO_ROOT}/../.." && pwd)"
 source "${REPO_ROOT}/lib/common.sh"
+# Modules run in their own bash process, so the menu functions sourced by
+# install.sh are not inherited; source them here (guarded by menu.sh itself).
+# shellcheck source=lib/menu.sh
+source "${REPO_ROOT}/lib/menu.sh"
 
 require_command caelestia
 require_command paru

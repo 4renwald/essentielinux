@@ -42,6 +42,8 @@ export GIT_ASKPASS=/bin/true
 # every interactive start, which is what themes the terminal.
 readonly CAELESTIA_SEQUENCES_PATTERN='caelestia/sequences.txt'
 
+readonly UWSM_CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/uwsm"
+
 readonly HYPR_MAIN_CONFIG="${HYPR_CONFIG_DIR}/hyprland.lua"
 readonly HYPR_EXECS_CONFIG="${HYPR_CONFIG_DIR}/hyprland/execs.lua"
 readonly HYPR_EXECS_REQUIRE_PATTERN="require[[:space:]]*\\([[:space:]]*['\"]hyprland\\.execs['\"][[:space:]]*\\)"
@@ -138,6 +140,7 @@ caelestia_config_complete() {
     (.applied_rev | type == "string" and length > 0)
     and (.enabled_components | type == "array" and index("hypr") != null)
     and (.enabled_components | index("fish") != null)
+    and (.enabled_components | index("uwsm") != null)
   ' "${CAELESTIA_STATE_FILE}" >/dev/null 2>&1 || return 1
 
   # Without the fish component nothing replays the scheme, so every terminal
@@ -151,7 +154,80 @@ caelestia_config_complete() {
   grep -Eq "${HYPR_EXECS_REQUIRE_PATTERN}" "${HYPR_MAIN_CONFIG}" || return 1
   grep -Eq "${HYPR_START_EVENT_PATTERN}" "${HYPR_EXECS_CONFIG}" || return 1
   grep -Eq "${CAELESTIA_AUTOSTART_PATTERN}" "${HYPR_EXECS_CONFIG}" || return 1
+
+  # The uwsm component deploys the environment files the uwsm-managed session
+  # sources. Without them the session entry still appears in the greeter but
+  # starts without Caelestia's environment, so treat it as incomplete.
+  [[ -f ${UWSM_CONFIG_DIR}/env ]] || return 1
+  [[ -f ${UWSM_CONFIG_DIR}/env-hyprland ]] || return 1
+
   Hyprland --verify-config --config "${HYPR_MAIN_CONFIG}" >/dev/null 2>&1
+}
+
+# The optional (off-by-default) component names Caelestia would offer in its
+# own prompt, parsed from the installer's help output. The list is coloured
+# and tab-aligned, so strip ANSI codes and take the name before the marker;
+# only "(off)" rows are optional, "(default)" ones are always enabled anyway.
+caelestia_optional_components() {
+  local help_text line name
+
+  help_text="$(caelestia install --help 2>&1)" || return 1
+  while IFS= read -r line; do
+    line="$(printf '%s' "${line}" | sed -e 's/\x1b\[[0-9;]*m//g')"
+    [[ ${line} == *'(off)' ]] || continue
+    name="${line%%$'\t'*}"
+    name="${name//[[:space:]]/}"
+    if [[ -n ${name} ]]; then
+      printf '%s\n' "${name}"
+    fi
+  done <<< "${help_text}"
+  return 0
+}
+
+# Ask which optional components (uwsm, spotify, vscodium, ...) to install.
+# Caelestia only shows this prompt when NO component flag is passed, and the
+# flags are mandatory here to keep firefox off, so the selection is gathered
+# with the local menu instead and handed to the installer explicitly.
+choose_caelestia_components() {
+  local -a optional=() rows=() checked=() required=()
+  local index name width=0 rc=0
+
+  mapfile -t optional < <(caelestia_optional_components)
+  ((${#optional[@]} > 0)) \
+    || die "Could not read Caelestia's optional component list from 'caelestia install --help'; refusing to run the installer without asking."
+
+  for name in "${optional[@]}"; do
+    if ((${#name} > width)); then
+      width=${#name}
+    fi
+  done
+  for index in "${!optional[@]}"; do
+    name="${optional[index]}"
+    rows+=("$(printf '%-*s' "${width}" "${name}")")
+    checked+=(0)
+    required+=(0)
+    if [[ ${name} == uwsm ]]; then
+      rows[index]+='   - required for the uwsm-managed Hyprland session'
+      checked[index]=1
+      required[index]=1
+    fi
+  done
+
+  menu_select_many \
+    '[*]  Caelestia: pick the optional components to install' \
+    'space toggle - a all/none - r reset - enter apply' \
+    checked required "${rows[@]}" < /dev/tty || rc=$?
+  if ((rc != 0)); then
+    die 'Component selection cancelled.'
+  fi
+
+  CAELESTIA_ENABLED_COMPONENTS=()
+  for index in "${!optional[@]}"; do
+    if ((checked[index])); then
+      CAELESTIA_ENABLED_COMPONENTS+=("${optional[index]}")
+    fi
+  done
+  return 0
 }
 
 wallpaper_repository_matches() {
@@ -217,15 +293,29 @@ log_warn "This step is interactive: answer the prompts. Building Quickshell take
 # how the prompt was answered. That matters because the deployed Hyprland
 # config executes what those components install (gnome-keyring, polkit-gnome,
 # trash-cli, the GTK and Qt theming) and hl.exec_cmd failures are silent.
-# firefox is the one default turned off here: this system uses Zen.
 #
-# Older caelestia-cli releases have no component flags, so fall back to the
-# interactive form rather than dying on an argument error.
+# The flag form has a cost: Caelestia only offers its OPTIONAL components
+# (uwsm, spotify, vscodium, ...) when no component flag is given, so a bare
+# --disable-components firefox silently drops the whole selection step and
+# leaves the machine without a uwsm-managed Hyprland session. The optional
+# set is therefore picked in the local menu (uwsm pinned as required) and
+# passed explicitly. firefox stays the one default turned off: this system
+# uses Zen.
+#
+# Older caelestia-cli releases have no component flags at all, so fall back
+# to the fully interactive form rather than dying on an argument error.
 if caelestia install --help 2>&1 | grep -Fq -- '--disable-components'; then
-  caelestia install --disable-components firefox < /dev/tty
+  choose_caelestia_components
+  caelestia_installer_args=(install --disable-components firefox)
+  if ((${#CAELESTIA_ENABLED_COMPONENTS[@]} > 0)); then
+    caelestia_installer_args+=(
+      --enable-components "$(IFS=,; echo "${CAELESTIA_ENABLED_COMPONENTS[*]}")"
+    )
+  fi
+  caelestia "${caelestia_installer_args[@]}" < /dev/tty
 else
   log_warn "This caelestia-cli has no component flags; the installer will ask instead."
-  log_warn "Select at least 'hypr', 'fish', 'gtk', 'qt', 'auth', 'fonts' and 'tools': the deployed config runs what they install."
+  log_warn "Enable at least 'uwsm' alongside anything else you want: the greeter starts the uwsm-managed Hyprland session, and skipping it leaves no working session."
   caelestia install < /dev/tty
 fi
 
@@ -237,7 +327,7 @@ if ! caelestia_config_complete; then
     verify_output="$(Hyprland --verify-config --config "${HYPR_MAIN_CONFIG}" 2>&1)" || true
     [[ -z ${verify_output} ]] || log_error "Hyprland config verification output: ${verify_output//$'\n'/; }"
   fi
-  die "The Caelestia installer exited without a complete managed copy of its Hyprland tree, its fish component, required packages, valid saved state, or a Hyprland-verifiable shell startup callback. Review the installer and verification output."
+  die "The Caelestia installer exited without a complete managed copy of its Hyprland tree, its fish and uwsm components, required packages, valid saved state, or a Hyprland-verifiable shell startup callback. Review the installer and verification output."
 fi
 
 log_success "Caelestia's complete Hyprland tree matches the applied upstream revision plus managed overrides and passes Hyprland's config verifier."

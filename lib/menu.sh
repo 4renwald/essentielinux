@@ -174,10 +174,14 @@ menu_select_many() {
   shift 4
   local -a rows=("$@")
   local -n marks=${checked_name}
-  local -a required=()
+  # The guard array must NOT be called `required` here: that is the name the
+  # caller passes in, and a local of the same name would make required_ref
+  # resolve to this empty array instead of the caller's, silently disabling
+  # the guard.
+  local -a required_marks=()
   if [[ -n ${required_name} ]]; then
     local -n required_ref=${required_name}
-    required=("${required_ref[@]}")
+    required_marks=("${required_ref[@]}")
   fi
   local highlight key item count
   highlight="$(_menu_start_row ${#rows[@]} 0)"
@@ -195,7 +199,7 @@ menu_select_many() {
       up) ((highlight = (highlight - 1 + ${#rows[@]}) % ${#rows[@]})) ;;
       down) ((highlight = (highlight + 1) % ${#rows[@]})) ;;
       space)
-        if [[ ${required[highlight]:-0} == 1 ]]; then
+        if [[ ${required_marks[highlight]:-0} == 1 ]]; then
           :
         else
           ((marks[highlight] ^= 1))
@@ -205,13 +209,13 @@ menu_select_many() {
         local toggle=1
         ((marks[highlight])) && toggle=0
         for ((item = 0; item < ${#marks[@]}; item++)); do
-          [[ ${required[item]:-0} == 1 ]] && continue
+          [[ ${required_marks[item]:-0} == 1 ]] && continue
           marks[item]=${toggle}
         done
         ;;
       reset)
         for ((item = 0; item < ${#marks[@]}; item++)); do
-          [[ ${required[item]:-0} == 1 ]] && continue
+          [[ ${required_marks[item]:-0} == 1 ]] && continue
           marks[item]=1
         done
         ;;

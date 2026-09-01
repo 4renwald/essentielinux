@@ -49,6 +49,10 @@ readonly CAELESTIA_SEQUENCES_PATTERN='caelestia/sequences.txt'
 
 readonly UWSM_CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/uwsm"
 readonly CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
+readonly STATE_HOME="${XDG_STATE_HOME:-${HOME}/.local/state}"
+readonly SPOTIFY_PREFS_FILE="${CONFIG_HOME}/spotify/prefs"
+readonly SPICETIFY_THEME_DIR="${CONFIG_HOME}/spicetify/Themes/caelestia"
+readonly SPICETIFY_BACKUP_DIR="${STATE_HOME}/spicetify/Backup"
 readonly ZEN_CONFIG_ROOT="${CONFIG_HOME}/zen"
 readonly ZEN_LEGACY_ROOT="${HOME}/.zen"
 readonly ZEN_THEME_BEGIN='// >>> workstation Caelestia Zen theme >>>'
@@ -258,13 +262,128 @@ activate_equibop_theme() {
   log_success 'Equibop: the Caelestia theme is enabled in its local theme list.'
 }
 
+# Spotify's own directory: the one holding the Apps folder Spicetify rewrites.
+# The package file list is authoritative; the literal paths only cover a
+# Spotify installed outside pacman.
+spotify_install_dir() {
+  local candidate
+  local -a candidates=()
+
+  candidate="$(pacman -Ql spotify 2>/dev/null \
+    | awk '$2 ~ /\/Apps\/$/ { print substr($2, 1, length($2) - 6); exit }')" \
+    || candidate=''
+  [[ -n ${candidate} ]] && candidates+=("${candidate}")
+  candidates+=(/opt/spotify /opt/spotify/spotify-client /usr/share/spotify)
+
+  for candidate in "${candidates[@]}"; do
+    if [[ -d ${candidate}/Apps ]]; then
+      printf '%s\n' "${candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Spicetify only accepts a prefs path that already exists, and Spotify writes
+# that file the first time it starts. A machine set up in one pass has never
+# started Spotify, so Spicetify's auto-detection finds nothing and aborts with
+# "Cannot detect Spotify \"prefs\" file location". Create the empty file Spotify
+# would have created; Spotify fills in its own settings on first launch.
+ensure_spotify_prefs() {
+  local prefs_dir
+  prefs_dir="$(dirname -- "${SPOTIFY_PREFS_FILE}")"
+  if [[ -f ${SPOTIFY_PREFS_FILE} ]]; then
+    return 0
+  fi
+  if path_has_symlink "${prefs_dir}"; then
+    die "Refusing to create Spotify's prefs file through a symlink: ${prefs_dir}"
+  fi
+  install -d "${prefs_dir}"
+  : > "${SPOTIFY_PREFS_FILE}"
+  chmod 0600 "${SPOTIFY_PREFS_FILE}"
+  log_info "Created an empty ${SPOTIFY_PREFS_FILE}; Spotify fills it in on first launch."
+}
+
+# Applying a theme deletes and rebuilds Spotify's Apps directory, so the
+# desktop user needs write access to it and to the root-owned directory that
+# holds it. Upstream tells Arch users to make both world-writable; give them
+# to this user instead, which fixes the same failure without opening a
+# root-owned tree to every local account. A spotify package upgrade resets the
+# ownership, and rerunning this module restores it.
+grant_spotify_write_access() {
+  local install_dir=$1 owner
+  owner="$(id -u):$(id -g)"
+  as_root chown -h "${owner}" -- "${install_dir}" \
+    || die "Could not take ownership of ${install_dir} for Spicetify."
+  as_root chown -Rh "${owner}" -- "${install_dir}/Apps" \
+    || die "Could not take ownership of ${install_dir}/Apps for Spicetify."
+  as_root chmod u+rwX -- "${install_dir}"
+  as_root chmod -R u+rwX -- "${install_dir}/Apps"
+}
+
+# Spotify still carries the packaged .spa archives, so Spicetify can take (or
+# retake) its backup from them. This mirrors Spicetify's own "backupable" test.
+spotify_is_backupable() {
+  compgen -G "$1/Apps/*.spa" > /dev/null 2>&1
+}
+
+spicetify_has_backup() {
+  compgen -G "${SPICETIFY_BACKUP_DIR}/*.spa" > /dev/null 2>&1
+}
+
+# Spicetify has already replaced the stock archive with an unpacked, themed
+# xpui directory, and its configuration still names the Caelestia theme.
+spicetify_theme_active() {
+  local install_dir=$1
+  [[ -d ${install_dir}/Apps/xpui && -f ${install_dir}/Apps/xpui/user.css ]] || return 1
+  spicetify config current_theme 2>/dev/null \
+    | grep -Eq '(^|[[:space:]=])caelestia([[:space:]]|$)'
+}
+
 activate_spicetify_theme() {
+  local install_dir
   require_command spicetify
+
   log_step 'Activating the Caelestia Spicetify theme'
-  spicetify config current_theme caelestia color_scheme caelestia custom_apps marketplace \
+  install_dir="$(spotify_install_dir)" \
+    || die 'Could not find the Spotify installation directory. Reinstall the spotify package, then rerun ./install.sh 45.'
+  [[ -d ${SPICETIFY_THEME_DIR} ]] \
+    || die "Caelestia's Spicetify theme is missing at ${SPICETIFY_THEME_DIR}; rerun the Caelestia installer with its spotify component enabled."
+
+  if spicetify_theme_active "${install_dir}"; then
+    log_success 'Spotify: Spicetify is already using Caelestia.'
+    return 0
+  fi
+
+  ensure_spotify_prefs
+  grant_spotify_write_access "${install_dir}"
+
+  # Pin both paths instead of leaving them to auto-detection, which reads a
+  # prefs file Spotify has not written yet and a `whereis spotify` result that
+  # depends on the launcher being on PATH.
+  spicetify config \
+    spotify_path "${install_dir}" \
+    prefs_path "${SPOTIFY_PREFS_FILE}" \
+    current_theme caelestia \
+    color_scheme caelestia \
+    custom_apps marketplace \
     || die 'Spicetify rejected the Caelestia theme configuration.'
-  spicetify apply \
-    || die 'Spicetify could not apply the Caelestia theme to Spotify.'
+
+  # `spicetify apply` refuses to run without a backup of the stock client, and
+  # refuses again when the backup it has was taken from a different Spotify
+  # version, so neither state can be assumed. Take the branch that ends with a
+  # backup matching the installed client. -n keeps Spicetify from launching
+  # Spotify afterwards: this still runs inside the installer, usually with no
+  # desktop session to launch it into.
+  if spotify_is_backupable "${install_dir}"; then
+    spicetify -n backup apply \
+      || die 'Spicetify could not back up and theme Spotify.'
+  elif spicetify_has_backup; then
+    spicetify -n restore backup apply \
+      || die 'Spicetify could not restore, back up, and theme Spotify.'
+  else
+    die "Spotify at ${install_dir} is already modified and Spicetify has no backup to restore. Reinstall the spotify package, then rerun ./install.sh 45."
+  fi
   log_success 'Spotify: Spicetify is using Caelestia.'
 }
 
@@ -467,22 +586,31 @@ activate_zen_theme() {
   done
 }
 
+activate_caelestia_integration() {
+  case $1 in
+    vscode | vscodium) activate_editor_theme "$1" ;;
+    discord) activate_equibop_theme ;;
+    spotify) activate_spicetify_theme ;;
+    zen) activate_zen_theme ;;
+    *) die "Unknown Caelestia integration: $1" ;;
+  esac
+}
+
+# The app integrations are independent of one another, so each one runs in its
+# own subshell: a failing integration still reports its cause, but it no longer
+# swallows the ones queued behind it. The whole step still fails afterwards, so
+# nothing silently ships half-themed.
 activate_caelestia_integrations() {
-  if caelestia_integration_selected vscode; then
-    activate_editor_theme vscode
-  fi
-  if caelestia_integration_selected vscodium; then
-    activate_editor_theme vscodium
-  fi
-  if caelestia_integration_selected discord; then
-    activate_equibop_theme
-  fi
-  if caelestia_integration_selected spotify; then
-    activate_spicetify_theme
-  fi
-  if caelestia_integration_selected zen; then
-    activate_zen_theme
-  fi
+  local integration
+  local -a failed=()
+
+  for integration in vscode vscodium discord spotify zen; do
+    caelestia_integration_selected "${integration}" || continue
+    ( activate_caelestia_integration "${integration}" ) || failed+=("${integration}")
+  done
+
+  ((${#failed[@]} == 0)) \
+    || die "Could not activate the Caelestia theme for: ${failed[*]}. Fix the cause reported above, then rerun ./install.sh 45."
 }
 
 caelestia_config_complete() {

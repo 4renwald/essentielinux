@@ -435,11 +435,19 @@ if caelestia_component_enabled discord || pacman -Q equibop-bin >/dev/null 2>&1;
 fi
 if caelestia_component_enabled spotify \
   || { pacman -Q spotify >/dev/null 2>&1 && pacman -Q spicetify-cli >/dev/null 2>&1; }; then
-  if command -v spicetify >/dev/null 2>&1 \
-    && spicetify config current_theme 2>/dev/null | grep -Eq '(^|[[:space:]=])caelestia([[:space:]]|$)'; then
-    pass 'Spicetify is using the Caelestia theme.'
+  spotify_apps_dir="$(pacman -Ql spotify 2>/dev/null \
+    | awk '$2 ~ /\/Apps\/$/ { print substr($2, 1, length($2) - 1); exit }')"
+  [[ -n ${spotify_apps_dir} ]] || spotify_apps_dir=/opt/spotify/Apps
+  if ! command -v spicetify >/dev/null 2>&1 \
+    || ! spicetify config current_theme 2>/dev/null | grep -Eq '(^|[[:space:]=])caelestia([[:space:]]|$)'; then
+    fail 'Spicetify is not configured for the Caelestia theme. Run ./install.sh 45.'
+  # Naming the theme in config-xpui.ini is not the same as having applied it:
+  # `spicetify apply` unpacks xpui.spa into an xpui directory and writes the
+  # theme's user.css there, so that is what proves Spotify is actually themed.
+  elif [[ ! -f ${spotify_apps_dir}/xpui/user.css ]]; then
+    fail "Spicetify names the Caelestia theme but has not applied it to ${spotify_apps_dir}. Run ./install.sh 45."
   else
-    fail 'Spicetify is not using the Caelestia theme. Run ./install.sh 45.'
+    pass 'Spicetify is using the Caelestia theme.'
   fi
 fi
 if caelestia_component_enabled zen || pacman -Q zen-browser-bin >/dev/null 2>&1; then
@@ -919,41 +927,66 @@ else
 fi
 
 log_step "Boot menu"
-limine_config=''
+limine_configs=()
 boot_reader=()
 if sudo -n true >/dev/null 2>&1; then
   boot_reader=(sudo -n)
 fi
+# Module 55 themes every candidate it finds, because which one Limine reads
+# depends on how the firmware reports the volume it booted from. Check them
+# all for the same reason.
 for candidate in \
   /boot/limine/limine.conf /boot/limine.conf \
   /boot/EFI/limine/limine.conf /boot/EFI/arch-limine/limine.conf /boot/EFI/BOOT/limine.conf \
+  /boot/efi/limine/limine.conf /boot/efi/limine.conf \
+  /boot/efi/EFI/limine/limine.conf /boot/efi/EFI/arch-limine/limine.conf /boot/efi/EFI/BOOT/limine.conf \
   /efi/limine/limine.conf /efi/limine.conf \
   /efi/EFI/limine/limine.conf /efi/EFI/arch-limine/limine.conf /efi/EFI/BOOT/limine.conf; do
   if "${boot_reader[@]}" test -f "${candidate}" 2>/dev/null; then
-    limine_config="${candidate}"
-    break
+    limine_configs+=("${candidate}")
   fi
 done
-if [[ -z ${limine_config} ]]; then
+if ((${#limine_configs[@]} == 0)); then
   warn "No readable limine.conf found. If /boot is root-only, rerun this check while the sudo credential is cached."
 else
-  if "${boot_reader[@]}" grep -Fq '# >>> workstation appearance >>>' "${limine_config}"; then
-    pass "The Limine appearance block is applied in ${limine_config}."
-  else
-    fail "${limine_config} carries no workstation appearance block. Run ./install.sh 55."
-  fi
-  if "${boot_reader[@]}" grep -Eq '^term_palette:[[:space:]]' "${limine_config}" \
-    && ! "${boot_reader[@]}" grep -Eq '^wallpaper:[[:space:]]' "${limine_config}"; then
-    pass "Limine uses the configured wallpaper-free terminal palette."
-  else
-    fail "Limine's wallpaper-free terminal palette is not active. Run ./install.sh 55."
-  fi
+  for limine_config in "${limine_configs[@]}"; do
+    if "${boot_reader[@]}" grep -Fq '# >>> workstation appearance >>>' "${limine_config}"; then
+      pass "The Limine appearance block is applied in ${limine_config}."
+    else
+      fail "${limine_config} carries no workstation appearance block. Run ./install.sh 55."
+    fi
+    if "${boot_reader[@]}" grep -Eq '^term_palette:[[:space:]]' "${limine_config}" \
+      && ! "${boot_reader[@]}" grep -Eq '^wallpaper:[[:space:]]' "${limine_config}"; then
+      pass "${limine_config} uses the configured wallpaper-free terminal palette."
+    else
+      fail "Limine's wallpaper-free terminal palette is not active in ${limine_config}. Run ./install.sh 55."
+    fi
+  done
 fi
 
-if efibootmgr -v 2>/dev/null | grep -Eq '^Boot[[:xdigit:]]{4}\*?[[:space:]]+Limine([[:space:]]|$)'; then
-  pass "A named Limine firmware entry exists."
+# archinstall labels its own entry "Arch Linux Limine Bootloader", and module
+# 55 keeps that one rather than stacking a second entry beside it, so accept
+# any entry whose label names Limine or whose loader path is Limine's. The
+# label is taken from before the device path, which contains "limine" itself
+# whenever Limine is installed under one of its own directories.
+if efibootmgr -v 2>/dev/null | awk '
+    /^Boot[[:xdigit:]][[:xdigit:]][[:xdigit:]][[:xdigit:]][*]?[[:space:]]/ {
+      line = $0
+      sub(/^Boot[[:xdigit:]]{4}[*]?[[:space:]]+/, "", line)
+      label = line
+      sub(/\t.*$/, "", label)
+      sub(/(HD|PciRoot|VenHw|FvVol)\(.*$/, "", label)
+      path = ""
+      if (match(line, /[Ff]ile\([^)]*\)/)) {
+        path = substr(line, RSTART + 5, RLENGTH - 6)
+      }
+      if (tolower(label) ~ /limine/ || tolower(path) ~ /limine/) { found = 1 }
+    }
+    END { exit(found ? 0 : 1) }
+  '; then
+  pass "A Limine firmware entry exists."
 else
-  fail "No named Limine firmware entry exists. Run ./install.sh 55."
+  fail "No Limine firmware entry exists. Run ./install.sh 55."
 fi
 
 printf '\nResult: %d error(s), %d warning(s).\n' "${failures}" "${warnings}"

@@ -163,21 +163,22 @@ end_elevation() {
 }
 
 as_root() {
+  # Every branch propagates the command's own status: callers branch on
+  # `if as_root test ...`, and a forced 0 would turn every existence check
+  # into a true answer.
   if ((EUID == 0)); then
     "$@"
-    return 0
+    return
   fi
   case ${ELEVATION_MODE:-} in
     root)
       "$@"
-      return 0
+      return
       ;;
     sudo)
       sudo -n true 2>/dev/null \
         || { log_warn 'sudo authorization expired; one more password prompt.'; sudo -v; }
       sudo -n -- "$@"
-      # Propagate the command's own status: callers branch on `if as_root test`
-      # and a forced 0 would skip existence checks (and the Bibata install).
       return
       ;;
   esac

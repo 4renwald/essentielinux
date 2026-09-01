@@ -6,6 +6,7 @@ claude-code :: Claude Code CLI
 opencode-desktop-bin :: graphical OpenCode client, alongside the opencode CLI
 bibata-cursor-theme-bin :: Bibata Modern Classic cursor
 brave-origin-bin :: Brave Origin browser, the system's Chromium-based browser
+brave-bin :: Brave browser
 equibop-bin :: Equibop Discord client
 spotify :: Spotify client
 spicetify-cli :: Spicetify CLI

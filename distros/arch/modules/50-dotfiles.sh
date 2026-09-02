@@ -105,6 +105,18 @@ for dotfile_set in "${dotfile_sets[@]}"; do
   done < <(find "${dotfile_set}" -type f -print0 | sort -z)
 done
 
+# Codex discovers a single global AGENTS.md and has no additive instruction
+# mechanism, so the deployed privilege-escalation rules and the vendored
+# Karpathy guidelines are combined here. ChatGPT desktop's Codex surface reads
+# this same file.
+log_step "Assembling the Codex global instructions"
+codex_agents="${HOME}/.codex/AGENTS.md"
+codex_karpathy="${HOME}/.codex/instructions/karpathy-guidelines.md"
+[[ -f ${codex_agents} && -f ${codex_karpathy} ]] \
+  || die "Codex instruction sources missing after dotfile deployment: ${codex_agents}, ${codex_karpathy}"
+{ cat -- "${codex_agents}"; printf '\n'; cat -- "${codex_karpathy}"; } > "${codex_agents}.tmp"
+mv -- "${codex_agents}.tmp" "${codex_agents}"
+
 if command -v xdg-user-dirs-update >/dev/null 2>&1; then
   xdg-user-dirs-update
 fi

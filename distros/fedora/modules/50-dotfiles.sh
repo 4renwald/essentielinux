@@ -52,6 +52,18 @@ log_step 'Copying managed configuration (never symlinking it)'
 copy_tree "${DISTRO_ROOT}/dotfiles/desktop"
 copy_tree "${DISTRO_ROOT}/dotfiles/agents"
 
+# Codex discovers a single global AGENTS.md and has no additive instruction
+# mechanism, so the deployed privilege-escalation rules and the vendored
+# Karpathy guidelines are combined here. ChatGPT desktop's Codex surface reads
+# this same file.
+log_step 'Assembling the Codex global instructions'
+codex_agents="${HOME}/.codex/AGENTS.md"
+codex_karpathy="${HOME}/.codex/instructions/karpathy-guidelines.md"
+[[ -f ${codex_agents} && -f ${codex_karpathy} ]] \
+  || die "Codex instruction sources missing after dotfile deployment: ${codex_agents}, ${codex_karpathy}"
+{ cat -- "${codex_agents}"; printf '\n'; cat -- "${codex_karpathy}"; } > "${codex_agents}.tmp"
+mv -- "${codex_agents}.tmp" "${codex_agents}"
+
 xdg-user-dirs-update
 
 if command -v noctalia >/dev/null 2>&1; then

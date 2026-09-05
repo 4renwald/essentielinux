@@ -376,7 +376,10 @@ install_pacman_manifest() {
     log_info "No packages selected in $(basename -- "${manifest}"); skipping."
     return 0
   fi
-  as_root pacman -S --needed --noconfirm "${PACKAGES[@]}"
+  # Refresh the sync database first: packages move between the AUR and the
+  # official repositories between runs, and one stale target fails the whole
+  # transaction. The bootstrap's -Syu covers the full-upgrade side of -Sy.
+  as_root pacman -Sy --needed --noconfirm "${PACKAGES[@]}"
 }
 
 # AUR packages remain user-produced PKGBUILDs: they build unprivileged through

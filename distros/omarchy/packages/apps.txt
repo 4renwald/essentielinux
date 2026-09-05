@@ -1,8 +1,7 @@
 # Applications from Arch's official repositories. Several of this list's
-# packages (obsidian, mullvad-vpn, vaultwarden) have moved out of the AUR.
+# packages (obsidian, mullvad-vpn) have moved out of the AUR.
 github-cli :: GitHub CLI
 obsidian :: Obsidian notes
 qbittorrent :: BitTorrent client
 mullvad-vpn :: Mullvad VPN client
 nextcloud-client :: Nextcloud desktop file-sync client
-vaultwarden :: Bitwarden-compatible Vaultwarden server

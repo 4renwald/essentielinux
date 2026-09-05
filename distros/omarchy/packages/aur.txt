@@ -1,6 +1,9 @@
 # AUR packages, built and installed through yay, which Omarchy ships.
+# proton-mail builds WebClients from source, and its sharp dependency tries to
+# build against any global libvips, which fails under yarn's node-gyp, so the
+# -bin repack of Proton's official build is used instead.
 brave-origin-bin :: Brave Origin browser, the system's Chromium-based browser
 keeper-password-manager :: Keeper password manager
 opencode-desktop :: graphical OpenCode client built from source (not the -bin)
-proton-mail :: Proton Mail and Proton Calendar desktop client
+proton-mail-bin :: Proton Mail and Proton Calendar desktop client
 equibop :: Equibop Discord client

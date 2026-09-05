@@ -11,7 +11,7 @@ This is my installer for Fedora, Arch, and Omarchy machines. It detects the dist
 | Hyprland + Noctalia | Hyprland + Caelestia | Preinstalled Hyprland + Quickshell |
 | Ghostty themed by Noctalia | Ghostty themed by Caelestia | Omarchy's own desktop, untouched |
 | Brave Origin, Equibop, VSCodium, Nextcloud, qBittorrent | Brave Origin, Equibop, VS Code, Nextcloud, qBittorrent | Brave Origin, Keeper, OpenCode Desktop, Obsidian, Proton Mail, Equibop, qBittorrent, Mullvad VPN, Nextcloud, Vaultwarden |
-| PipeWire, gaming, printing, Snapper on btrfs | PipeWire, gaming, AUR tools, Snapper on btrfs | GitHub CLI, the fish + starship toolchain, and the managed fish config |
+| PipeWire, gaming, printing, Snapper on btrfs | PipeWire, gaming, AUR tools, Snapper on btrfs | GitHub CLI, the fish + starship toolchain, the managed fish config, and agent skills for opencode, Claude Code, and Codex CLI |
 | Python + uv, Go, WinBoat, Tailscale | Python + uv, Go, WinBoat, Tailscale | — |
 
 ## 🚀 Quick start

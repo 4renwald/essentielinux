@@ -7,11 +7,11 @@ DISTRO_INFO='Omarchy - Hyprland - Quickshell (desktop preinstalled)'
 MODULE_IDS=(10 20)
 MODULE_NAMES=(
   'Packages'
-  'Fish shell'
+  'Dotfiles'
 )
 MODULE_HINTS=(
   'Applications from the official repositories and the AUR'
-  'The Arch shell toolchain and the managed fish configuration'
+  'The Arch shell toolchain, the fish configuration, and agent skills'
 )
 
 # Steps that elevate; matches the privileged operations inside each module.
@@ -35,5 +35,5 @@ step_manifests() {
 
 # Post-run guidance, called by install.sh when the run finishes.
 distro_final_notes() {
-  log_info 'Omarchy owns the desktop; this setup only added packages and the fish configuration. Restart the terminal to load it.'
+  log_info 'Omarchy owns the desktop; this setup only added packages, the fish configuration, and the agent skills. Restart the terminal to load them.'
 }

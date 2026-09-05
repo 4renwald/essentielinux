@@ -71,4 +71,18 @@ codex_karpathy="${HOME}/.codex/instructions/karpathy-guidelines.md"
 { cat -- "${codex_agents}"; printf '\n'; cat -- "${codex_karpathy}"; } > "${codex_agents}.tmp"
 mv -- "${codex_agents}.tmp" "${codex_agents}"
 
-log_success 'Fish configuration and agent skills deployed. Omarchy already ships fish as the login shell.'
+log_step 'Setting fish as the login shell'
+install_user="$(id -un)"
+fish_path="$(command -v fish)" || die 'fish is not installed. Run ./install.sh 20 first.'
+if ! grep -Fxq "${fish_path}" /etc/shells; then
+  die "${fish_path} is missing from /etc/shells; chsh would reject it."
+fi
+current_shell="$(getent passwd "${install_user}" | cut -d: -f7)"
+if [[ ${current_shell} == "${fish_path}" ]]; then
+  log_success "fish is already the login shell for ${install_user}."
+else
+  as_root chsh -s "${fish_path}" "${install_user}"
+  log_warn "Changed the login shell from ${current_shell:-none} to ${fish_path}. It takes effect at the next login."
+fi
+
+log_success 'Fish configuration and agent skills deployed, and fish is the login shell.'

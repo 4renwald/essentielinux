@@ -9,7 +9,7 @@ fish configuration, and leaves Omarchy's own configuration and services alone.
 | Step | Name | What it does |
 | --- | --- | --- |
 | 10 | Packages | Applications from the official repositories and the AUR through yay |
-| 20 | Dotfiles | The Arch shell toolchain (minus Caelestia), the managed fish configuration, and agent skills for opencode, Claude Code, and Codex CLI |
+| 20 | Dotfiles | The Arch shell toolchain (minus Caelestia), the managed fish configuration and fish as the login shell, and agent skills for opencode, Claude Code, and Codex CLI |
 
 Run from a fresh Omarchy install:
 

@@ -11,7 +11,7 @@ MODULE_NAMES=(
 )
 MODULE_HINTS=(
   'Applications from the official repositories and the AUR'
-  'The Arch shell toolchain, the fish configuration, and agent skills'
+  'The Arch shell toolchain, the fish configuration and login shell, and agent skills'
 )
 
 # Steps that elevate; matches the privileged operations inside each module.
@@ -35,5 +35,5 @@ step_manifests() {
 
 # Post-run guidance, called by install.sh when the run finishes.
 distro_final_notes() {
-  log_info 'Omarchy owns the desktop; this setup only added packages, the fish configuration, and the agent skills. Restart the terminal to load them.'
+  log_info 'Omarchy owns the desktop; this setup only added packages, the fish configuration, the agent skills, and made fish the login shell. The shell change lands at the next login; restart the terminal to load the configuration.'
 }

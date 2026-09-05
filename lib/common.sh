@@ -394,6 +394,21 @@ install_paru_manifest() {
   paru -S --aur --needed "${PACKAGES[@]}"
 }
 
+# Same contract as install_paru_manifest, for Omarchy which ships yay instead
+# of paru. yay also asks for sudo itself when a built package is installed.
+install_yay_manifest() {
+  local manifest=$1
+  read_manifest "${manifest}"
+  apply_selection "${manifest}"
+  if ((${#PACKAGES[@]} == 0)); then
+    log_info "No AUR packages selected in $(basename -- "${manifest}"); skipping."
+    return 0
+  fi
+  require_command yay
+  log_warn 'AUR PKGBUILDs are user-produced. Review the changes shown by yay before approving installation.'
+  yay -S --aur --needed "${PACKAGES[@]}"
+}
+
 # System file deployment ----------------------------------------------------------
 
 path_has_symlink() {

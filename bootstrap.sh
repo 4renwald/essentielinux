@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly REPO_URL="https://github.com/4renwald/essentielinux.git"
-readonly TARGET_DIR="${WORKSTATION_DIR:-${HOME}/essentielinux}"
+readonly REPO_URL="https://github.com/4renwald/dotfiles.git"
+readonly TARGET_DIR="${WORKSTATION_DIR:-${HOME}/dotfiles}"
 
 if [[ ${EUID} -eq 0 ]]; then
   printf 'Error: run this script as your regular user, without sudo.\n' >&2
@@ -18,7 +18,7 @@ fi
 # package manager.
 distro="$(bash -c '. /etc/os-release 2>/dev/null; printf %s "${ID:-}"')"
 case ${distro} in
-  arch)
+  arch | omarchy)
     command -v sudo >/dev/null 2>&1 || {
       printf 'Error: sudo is required and must be configured for this user.\n' >&2
       exit 1
@@ -33,7 +33,7 @@ case ${distro} in
     sudo dnf -y install git
     ;;
   *)
-    printf 'Error: this bootstrap supports Arch Linux and Fedora only (found: %s).\n' "${distro}" >&2
+    printf 'Error: this bootstrap supports Fedora, Arch, and Omarchy only (found: %s).\n' "${distro}" >&2
     exit 1
     ;;
 esac

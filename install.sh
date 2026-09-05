@@ -15,11 +15,23 @@ detect_distro() {
   printf '%s\n' "${id}"
 }
 
+# Omarchy installs on top of Arch and keeps ID=arch in os-release, so fall
+# back to its own markers: the release file, the omarchy CLI, or the [omarchy]
+# pacman repository that only Omarchy configures.
+detect_omarchy() {
+  [[ -e /etc/omarchy-release ]] && return 0
+  command -v omarchy >/dev/null 2>&1 && return 0
+  grep -qs '^\[omarchy\]' /etc/pacman.conf
+}
+
 DISTRO_ID="$(detect_distro)"
+if [[ ${DISTRO_ID} == arch ]] && detect_omarchy; then
+  DISTRO_ID=omarchy
+fi
 case ${DISTRO_ID} in
-  fedora | arch) ;;
+  fedora | arch | omarchy) ;;
   *) cat >&2 <<EOF
-workstation supports Fedora and Arch Linux; /etc/os-release reports '${DISTRO_ID}'.
+dotfiles supports Fedora, Arch, and Omarchy; /etc/os-release reports '${DISTRO_ID}'.
 Support for a new distro lands in distros/${DISTRO_ID}/ with its own catalogue.sh.
 EOF
     exit 1
@@ -36,6 +48,7 @@ source "${REPO_ROOT}/lib/menu.sh"
 source "${REPO_ROOT}/lib/engine.sh"
 # shellcheck source=distros/fedora/catalogue.sh
 # shellcheck source=distros/arch/catalogue.sh
+# shellcheck source=distros/omarchy/catalogue.sh
 source "${DISTRO_ROOT}/catalogue.sh"
 catalogue_check
 
@@ -52,8 +65,9 @@ Usage: ./install.sh                 Interactive module picker
        ./install.sh --gpu amd 20    Override automatic GPU detection for this run
        WORKSTATION_GPU=none ./install.sh 20
 
-The installer detects the distro from /etc/os-release (Fedora or Arch), then
-loads that distro's modules, manifests, and device-specific steps.
+The installer detects the distro from /etc/os-release (Fedora, Arch, or
+Omarchy; Omarchy is recognized through its own markers), then loads that
+distro's modules, manifests, and device-specific steps.
 
 Interactive mode: space toggles steps, enter runs, c customizes the highlighted
 step package by package, and the "Customize packages" row at the bottom opens a

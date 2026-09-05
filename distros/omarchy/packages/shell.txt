@@ -1,0 +1,10 @@
+# The fish shell environment, matching the Arch setup minus Caelestia. fish
+# ships with Omarchy and pacman skips it when it is already installed.
+fish :: friendly interactive shell
+starship :: prompt
+eza :: modern ls replacement
+zoxide :: smarter cd
+fzf :: fuzzy finder
+fd :: modern find replacement used by fzf
+ripgrep :: fast code search
+bat :: cat with syntax highlighting
